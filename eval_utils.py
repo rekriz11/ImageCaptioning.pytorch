@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import torch
+import unicodedata
 import torch.nn as nn
 from torch.autograd import Variable
 
@@ -15,6 +16,8 @@ import time
 import os
 import sys
 import misc.utils as utils
+import json
+
 
 def language_eval(dataset, preds, model_id, split):
     import sys
@@ -39,7 +42,7 @@ def language_eval(dataset, preds, model_id, split):
     # filter results to only those in MSCOCO validation set (will be about a third)
     preds_filt = [p for p in preds if p['image_id'] in valids]
     print('using %d/%d predictions' % (len(preds_filt), len(preds)))
-    json.dump(preds_filt, open(cache_path, 'w')) # serialize to temporary json file. Sigh, COCO API...
+    json.dump(preds_filt, open(cache_path, 'w'))  # serialize to temporary json file. Sigh, COCO API...
 
     cocoRes = coco.loadRes(cache_path)
     cocoEval = COCOEvalCap(coco, cocoRes)
@@ -60,7 +63,9 @@ def language_eval(dataset, preds, model_id, split):
 
     return out
 
+
 def eval_split(model, crit, loader, eval_kwargs={}):
+    print('Evaluation Arguments {}'.format(eval_kwargs))
     verbose = eval_kwargs.get('verbose', True)
     num_images = eval_kwargs.get('num_images', eval_kwargs.get('val_images_use', -1))
     split = eval_kwargs.get('split', 'val')
@@ -78,6 +83,8 @@ def eval_split(model, crit, loader, eval_kwargs={}):
     loss_sum = 0
     loss_evals = 1e-8
     predictions = []
+
+    output_data = []
     while True:
         data = loader.get_batch(split)
         n = n + loader.batch_size
@@ -89,37 +96,70 @@ def eval_split(model, crit, loader, eval_kwargs={}):
                 tmp = [Variable(torch.from_numpy(_)).cuda() for _ in tmp]
                 fc_feats, att_feats, labels, masks = tmp
 
-                loss = crit(model(fc_feats, att_feats, labels), labels[:,1:], masks[:,1:]).item()
+                loss = crit(model(fc_feats, att_feats, labels), labels[:, 1:], masks[:, 1:]).item()
             loss_sum = loss_sum + loss
             loss_evals = loss_evals + 1
 
         # forward the model to also get generated samples for each image
         # Only leave one feature for each image, in case duplicate sample
-        tmp = [data['fc_feats'][np.arange(loader.batch_size) * loader.seq_per_img], 
-            data['att_feats'][np.arange(loader.batch_size) * loader.seq_per_img]]
+        tmp = [data['fc_feats'][np.arange(loader.batch_size) * loader.seq_per_img],
+               data['att_feats'][np.arange(loader.batch_size) * loader.seq_per_img]]
+        all_candidate_sentences_pre = None
         with torch.no_grad():
             tmp = [Variable(torch.from_numpy(_)).cuda() for _ in tmp]
             fc_feats, att_feats = tmp
             # forward the model to also get generated samples for each image
-            seq, _ = model.sample(fc_feats, att_feats, eval_kwargs)
+            result = model.sample(fc_feats, att_feats, eval_kwargs)
+            if len(result) == 4:
+                seq, _, all_candidate_sentences_pre,  all_candidate_scores_np = result
+            else:
+                seq, _ = result
         seq = seq.cpu().numpy()
-        
-        #set_trace()
         sents = utils.decode_sequence(loader.get_vocab(), seq)
 
+        all_candidate_sentences = None
+        if all_candidate_sentences_pre is not None:
+            all_candidate_sentences = []
+            for l in range(len(all_candidate_sentences_pre)):
+                candidate_sentences = []
+                for m in range(len(all_candidate_sentences_pre[l])):
+                    candidate_sentences.append(utils.decode_sequence(loader.get_vocab(), all_candidate_sentences_pre[l][m].cpu().numpy()))
+                all_candidate_sentences.append(candidate_sentences)
+
         for k, sent in enumerate(sents):
+            image_output_data = {}
+            image_output_data['input'] = os.path.join(eval_kwargs['image_root'], data['infos'][k]['file_path'])
             entry = {'image_id': data['infos'][k]['id'], 'caption': sent}
+            if all_candidate_sentences is not None:
+                entry['captions'] = all_candidate_sentences[k]
             if eval_kwargs.get('dump_path', 0) == 1:
                 entry['file_name'] = data['infos'][k]['file_path']
             predictions.append(entry)
             if eval_kwargs.get('dump_images', 0) == 1:
                 # dump the raw image to vis/ folder
-                cmd = 'cp "' + os.path.join(eval_kwargs['image_root'], data['infos'][k]['file_path']) + '" vis/imgs/img' + str(len(predictions)) + '.jpg' # bit gross
+                cmd = 'cp "' + os.path.join(eval_kwargs['image_root'],
+                                            data['infos'][k]['file_path']) + '" vis/imgs/img' + str(
+                    len(predictions)) + '.jpg'  # bit gross
                 print(cmd)
                 os.system(cmd)
 
             if verbose:
-                print('image %s: %s' %(entry['image_id'], entry['caption']))
+                print('image {} best caption: {}'.format(entry['image_id'], entry['caption']))
+
+            final_captions = []
+            if 'captions' in entry:
+                for caption_list in entry['captions']:
+                    filtered_caption_list = [a for a in caption_list if len(a) > 0]
+                    if len(filtered_caption_list) == 1:
+                        if verbose:
+                            print('\t{}'.format(filtered_caption_list[0]))
+                        final_captions.append(filtered_caption_list[0].split())
+                    else:
+                        if verbose:
+                            print('!!!Something went wrong --> \t{}'.format(' '.jon(filtered_caption_list)))
+            image_output_data['pred'] = final_captions
+            output_data.append(image_output_data)
+
 
         # if we wrapped around the split or used up val imgs budget then bail
         ix0 = data['bounds']['it_pos_now']
@@ -130,17 +170,19 @@ def eval_split(model, crit, loader, eval_kwargs={}):
             predictions.pop()
 
         if verbose:
-            print('evaluating validation preformance... %d/%d (%f)' %(ix0 - 1, ix1, loss))
+            print('evaluating validation preformance... %d/%d (%f)' % (ix0 - 1, ix1, loss))
 
         if data['bounds']['wrapped']:
             break
-        if num_images >= 0 and n >= num_images:
+        if 0 <= num_images <= n:
             break
 
     lang_stats = None
     if lang_eval == 1:
         lang_stats = language_eval(dataset, predictions, eval_kwargs['id'], split)
 
+
     # Switch back to training mode
     model.train()
-    return loss_sum/loss_evals, predictions, lang_stats
+    print(json.dumps(output_data, indent=4))
+    return loss_sum / loss_evals, predictions, lang_stats
