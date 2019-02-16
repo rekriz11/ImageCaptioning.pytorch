@@ -71,6 +71,7 @@ parser.add_argument('--coco_json', type=str, default='',
 parser.add_argument('--id', type=str, default='',
                     help='an id identifying this run/job. used only if language_eval = 1 for appending to intermediate files')
 
+parser.add_argument('--output_json_file_path', type=str, default='output.json')
 opt = parser.parse_args()
 
 # Load infos

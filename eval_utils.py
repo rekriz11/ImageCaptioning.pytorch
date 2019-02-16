@@ -72,6 +72,7 @@ def eval_split(model, crit, loader, eval_kwargs={}):
     lang_eval = eval_kwargs.get('language_eval', 0)
     dataset = eval_kwargs.get('dataset', 'coco')
     beam_size = eval_kwargs.get('beam_size', 1)
+    output_json_file_path = eval_kwargs.get('output_json_file_path', 'output.json')
 
     # Make sure in the evaluation mode
     model.eval()
@@ -111,20 +112,25 @@ def eval_split(model, crit, loader, eval_kwargs={}):
             # forward the model to also get generated samples for each image
             result = model.sample(fc_feats, att_feats, eval_kwargs)
             if len(result) == 4:
-                seq, _, all_candidate_sentences_pre,  all_candidate_scores_np = result
+                seq, _, all_candidate_sentences_pre,  all_candidate_scores_pre = result
             else:
                 seq, _ = result
         seq = seq.cpu().numpy()
         sents = utils.decode_sequence(loader.get_vocab(), seq)
 
         all_candidate_sentences = None
+        all_candidate_scores = None
         if all_candidate_sentences_pre is not None:
             all_candidate_sentences = []
+            all_candidate_scores = []
             for l in range(len(all_candidate_sentences_pre)):
                 candidate_sentences = []
+                candidate_scores = []
                 for m in range(len(all_candidate_sentences_pre[l])):
                     candidate_sentences.append(utils.decode_sequence(loader.get_vocab(), all_candidate_sentences_pre[l][m].cpu().numpy()))
+                    candidate_scores.append(all_candidate_scores_pre[l][m].cpu().numpy().item())
                 all_candidate_sentences.append(candidate_sentences)
+                all_candidate_scores.append(candidate_scores)
 
         for k, sent in enumerate(sents):
             image_output_data = {}
@@ -132,6 +138,7 @@ def eval_split(model, crit, loader, eval_kwargs={}):
             entry = {'image_id': data['infos'][k]['id'], 'caption': sent}
             if all_candidate_sentences is not None:
                 entry['captions'] = all_candidate_sentences[k]
+                entry['scores'] = all_candidate_scores[k]
             if eval_kwargs.get('dump_path', 0) == 1:
                 entry['file_name'] = data['infos'][k]['file_path']
             predictions.append(entry)
@@ -147,19 +154,21 @@ def eval_split(model, crit, loader, eval_kwargs={}):
                 print('image {} best caption: {}'.format(entry['image_id'], entry['caption']))
 
             final_captions = []
+            final_scores = []
             if 'captions' in entry:
-                for caption_list in entry['captions']:
-                    filtered_caption_list = [a for a in caption_list if len(a) > 0]
+                for o in range(len(entry['captions'])):
+                    filtered_caption_list = [a for a in entry['captions'][o] if len(a) > 0]
                     if len(filtered_caption_list) == 1:
                         if verbose:
-                            print('\t{}'.format(filtered_caption_list[0]))
+                            print('\t{} --> {}'.format(filtered_caption_list[0], entry['scores'][o]))
                         final_captions.append(filtered_caption_list[0].split())
+                        final_scores.append(entry['scores'][o])
                     else:
                         if verbose:
-                            print('!!!Something went wrong --> \t{}'.format(' '.jon(filtered_caption_list)))
+                            print('!!!Something went wrong --> \t{}'.format(' '.join(filtered_caption_list)))
             image_output_data['pred'] = final_captions
+            image_output_data['scores'] = final_scores
             output_data.append(image_output_data)
-
 
         # if we wrapped around the split or used up val imgs budget then bail
         ix0 = data['bounds']['it_pos_now']
@@ -181,8 +190,9 @@ def eval_split(model, crit, loader, eval_kwargs={}):
     if lang_eval == 1:
         lang_stats = language_eval(dataset, predictions, eval_kwargs['id'], split)
 
-
     # Switch back to training mode
     model.train()
-    print(json.dumps(output_data, indent=4))
+    with open(output_json_file_path, 'w') as fout:
+        print('Wrote to {}'.format(output_json_file_path))
+        json.dump(output_data, fout)
     return loss_sum / loss_evals, predictions, lang_stats
