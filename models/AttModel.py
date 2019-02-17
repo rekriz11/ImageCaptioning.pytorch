@@ -159,9 +159,7 @@ class AttModel(CaptionModel):
                 temp_seq = torch.LongTensor(self.seq_length, batch_size).zero_()
                 temp_seq[:, k] = self.done_beams[k][p]['seq']
                 candidate_sentences.append(temp_seq.transpose(0, 1))
-
-                # TODO: Check if this is correct
-                candidate_scores.append(self.done_beams[k][p]['logps'].exp().sum())
+                candidate_scores.append(self.done_beams[k][p]['logps'].sum())
 
             all_candidate_sentences.append(candidate_sentences)
             all_candidate_scores.append(candidate_scores)
