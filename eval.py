@@ -72,6 +72,8 @@ parser.add_argument('--id', type=str, default='',
                     help='an id identifying this run/job. used only if language_eval = 1 for appending to intermediate files')
 
 parser.add_argument('--output_json_file_path', type=str, default='output.json')
+parser.add_argument('--number_of_samples', type=int, default=4, help='Number of samples when sample_max is 0')
+
 opt = parser.parse_args()
 
 # Load infos

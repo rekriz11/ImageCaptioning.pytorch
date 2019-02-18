@@ -72,6 +72,9 @@ def eval_split(model, crit, loader, eval_kwargs={}):
     lang_eval = eval_kwargs.get('language_eval', 0)
     dataset = eval_kwargs.get('dataset', 'coco')
     beam_size = eval_kwargs.get('beam_size', 1)
+    sample_max = eval_kwargs.get('sample_max', 0)
+
+    print('In eval split', beam_size, sample_max)
     output_json_file_path = eval_kwargs.get('output_json_file_path', 'output.json')
 
     # Make sure in the evaluation mode
@@ -110,6 +113,8 @@ def eval_split(model, crit, loader, eval_kwargs={}):
             tmp = [Variable(torch.from_numpy(_)).cuda() for _ in tmp]
             fc_feats, att_feats = tmp
             # forward the model to also get generated samples for each image
+
+
             result = model.sample(fc_feats, att_feats, eval_kwargs)
             if len(result) == 4:
                 seq, _, all_candidate_sentences_pre,  all_candidate_scores_pre = result
