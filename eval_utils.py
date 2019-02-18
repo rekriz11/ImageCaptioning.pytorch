@@ -73,8 +73,7 @@ def eval_split(model, crit, loader, eval_kwargs={}):
     dataset = eval_kwargs.get('dataset', 'coco')
     beam_size = eval_kwargs.get('beam_size', 1)
     sample_max = eval_kwargs.get('sample_max', 0)
-
-    print('In eval split', beam_size, sample_max)
+    number_of_samples = eval_kwargs.get('number_of_samples', 1)
     output_json_file_path = eval_kwargs.get('output_json_file_path', 'output.json')
 
     # Make sure in the evaluation mode
@@ -114,28 +113,61 @@ def eval_split(model, crit, loader, eval_kwargs={}):
             fc_feats, att_feats = tmp
             # forward the model to also get generated samples for each image
 
-
-            result = model.sample(fc_feats, att_feats, eval_kwargs)
-            if len(result) == 4:
-                seq, _, all_candidate_sentences_pre,  all_candidate_scores_pre = result
+            if beam_size > 1:
+                result = model.sample(fc_feats, att_feats, eval_kwargs)
+                if len(result) == 4:
+                    seq, _, all_candidate_sentences_pre,  all_candidate_scores_pre = result
+                else:
+                    seq, _ = result
             else:
-                seq, _ = result
-        seq = seq.cpu().numpy()
-        sents = utils.decode_sequence(loader.get_vocab(), seq)
+                seqs = []
+                scores = []
+                for o in range(0, number_of_samples):
+                    seq, score = model.sample(fc_feats, att_feats, eval_kwargs)
+                    seqs.append(seq)
+                    scores.append(score)
 
-        all_candidate_sentences = None
-        all_candidate_scores = None
-        if all_candidate_sentences_pre is not None:
+        if beam_size > 1:
+            seq = seq.cpu().numpy()
+            sents = utils.decode_sequence(loader.get_vocab(), seq)
+
+            all_candidate_sentences = None
+            all_candidate_scores = None
+            if all_candidate_sentences_pre is not None:
+                all_candidate_sentences = []
+                all_candidate_scores = []
+                for l in range(0, len(all_candidate_sentences_pre)):
+                    candidate_sentences = []
+                    candidate_scores = []
+                    for m in range(len(all_candidate_sentences_pre[l])):
+                        candidate_sentences.append(utils.decode_sequence(loader.get_vocab(), all_candidate_sentences_pre[l][m].cpu().numpy()))
+                        candidate_scores.append(all_candidate_scores_pre[l][m].cpu().numpy().item())
+                    all_candidate_sentences.append(candidate_sentences)
+                    all_candidate_scores.append(candidate_scores)
+
+            filter_captions = True
+
+        else:
+            all_candidate_sentences_dict = {}
+            all_candidate_scores_dict = {}
+
+            for se, sc in zip(seqs, scores):
+                sents = utils.decode_sequence(loader.get_vocab(),  se.cpu().numpy())
+                scs = sc.cpu().numpy()
+                for o, sentence in enumerate(sents):
+                    if o not in all_candidate_sentences_dict:
+                        all_candidate_sentences_dict[o] = []
+                        all_candidate_scores_dict[o] = []
+
+                    all_candidate_sentences_dict[o].append(sentence)
+                    all_candidate_scores_dict[o].append(float(scs[o].sum()))
+
             all_candidate_sentences = []
             all_candidate_scores = []
-            for l in range(len(all_candidate_sentences_pre)):
-                candidate_sentences = []
-                candidate_scores = []
-                for m in range(len(all_candidate_sentences_pre[l])):
-                    candidate_sentences.append(utils.decode_sequence(loader.get_vocab(), all_candidate_sentences_pre[l][m].cpu().numpy()))
-                    candidate_scores.append(all_candidate_scores_pre[l][m].cpu().numpy().item())
-                all_candidate_sentences.append(candidate_sentences)
-                all_candidate_scores.append(candidate_scores)
+            for o in sorted(all_candidate_sentences_dict.keys()):
+                all_candidate_sentences.append(all_candidate_sentences_dict[o])
+                all_candidate_scores.append(all_candidate_scores_dict[o])
+            filter_captions = False
 
         for k, sent in enumerate(sents):
             image_output_data = {}
@@ -162,15 +194,24 @@ def eval_split(model, crit, loader, eval_kwargs={}):
             final_scores = []
             if 'captions' in entry:
                 for o in range(len(entry['captions'])):
-                    filtered_caption_list = [a for a in entry['captions'][o] if len(a) > 0]
-                    if len(filtered_caption_list) == 1:
-                        if verbose:
-                            print('\t{} --> {}'.format(filtered_caption_list[0], entry['scores'][o]))
-                        final_captions.append(filtered_caption_list[0].split())
-                        final_scores.append(entry['scores'][o])
+                    if filter_captions:
+                        filtered_caption_list = [a for a in entry['captions'][o] if len(a) > 0]
+                        # print(filtered_caption_list)
+                        if len(filtered_caption_list) == 1:
+                            if verbose:
+                                print('\t{} --> {}'.format(filtered_caption_list[0], entry['scores'][o]))
+                            final_captions.append(filtered_caption_list[0].split())
+                            final_scores.append(entry['scores'][o])
+                            entry['captions'][o] = filtered_caption_list[0]
+                        else:
+                            if verbose:
+                                print('!!!Something went wrong --> \t{}'.format(' '.join(filtered_caption_list)))
                     else:
                         if verbose:
-                            print('!!!Something went wrong --> \t{}'.format(' '.join(filtered_caption_list)))
+                            print('\t{} --> {}'.format(entry['captions'][o], entry['scores'][o]))
+                        final_captions.append(entry['captions'][o].split())
+                        final_scores.append(entry['scores'][o])
+
             image_output_data['pred'] = final_captions
             image_output_data['scores'] = final_scores
             output_data.append(image_output_data)
@@ -180,7 +221,7 @@ def eval_split(model, crit, loader, eval_kwargs={}):
         ix1 = data['bounds']['it_max']
         if num_images != -1:
             ix1 = min(ix1, num_images)
-        for i in range(n - ix1):
+        for i in range(0, n - ix1):
             predictions.pop()
 
         if verbose:
