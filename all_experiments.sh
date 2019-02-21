@@ -45,7 +45,7 @@ python eval.py --model "$MODEL" \
               --temperature 0.7 \
               --output_json_file_path "$OUTPUT_DIRECTORY/rs_t=0.7.json"
 
-echo "Random sampling, temperature=1.3"
+echo "Random sampling, temperature=0.5"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
@@ -53,5 +53,5 @@ python eval.py --model "$MODEL" \
               --sample_max 0 \
               --beam_size 1 \
               --number_of_samples $BATCH_SIZE \
-              --temperature 1.3 \
+              --temperature 0.5 \
               --output_json_file_path "$OUTPUT_DIRECTORY/rs_t=1.3.json"
