@@ -88,6 +88,7 @@ class CaptionModel(nn.Module):
             #num_cluster: number of clusters
             #embeds: glove embeddings for vocab
             #vocab: set of vocab
+            #prev_beams: previous beams in list[str] form
             #OUPUTS:
             #beam_seq : tensor containing the word indices of the decoded captions
             #beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
@@ -109,18 +110,19 @@ class CaptionModel(nn.Module):
                                            r=local_logprob))
             candidates = sorted(candidates,  key=lambda x: -x['p'])
             print(len(candidates))
-            print(list(vocab.keys())[:10])
 
             ##### Original Beam #####
+            cur_beams = []
             for i in range(beam_size):
-                prev_beam = prev_beams[candidates[i]['q']]
                 cur_beam = candidates[i]['c'].item()
-
-                print(prev_beam)
-                print(cur_beam)
-
-                print(vocab[cur_beam])
-                a = b
+                if t >= 1:
+                    prev_beam = prev_beams[candidates[i]['q']]
+                    cur_beams.append(prev_beam + [cur_beam])
+                else:
+                    cur_beams.append([cur_beam])
+            print(cur_beams)
+            ##### Original Beam #####
+                
             
             new_state = [_.clone() for _ in state]
             #beam_seq_prev, beam_seq_logprobs_prev
@@ -147,10 +149,9 @@ class CaptionModel(nn.Module):
             print(beam_seq)
             print(beam_seq_logprobs)
 
-            if t >= 1:
-                a = b
+            a = b
             
-            return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates
+            return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates, cur_beams
 
         # start beam search
         opt = kwargs['opt']
