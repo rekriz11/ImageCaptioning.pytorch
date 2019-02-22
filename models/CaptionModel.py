@@ -120,6 +120,7 @@ class CaptionModel(nn.Module):
                 print(cur_beam)
 
                 print(vocab[cur_beam])
+                a = b
             
             new_state = [_.clone() for _ in state]
             #beam_seq_prev, beam_seq_logprobs_prev
@@ -168,6 +169,9 @@ class CaptionModel(nn.Module):
         beam_logprobs_sum = torch.zeros(beam_size)
         done_beams = []
 
+        ## Keeps track of previous beams
+        prev_beams = [""]
+
         for t in range(self.seq_length):
             """pem a beam merge. that is,
             for every previous beam we now many new possibilities to branch out
@@ -183,7 +187,7 @@ class CaptionModel(nn.Module):
                           candidates_divm = cluster_beam_step(logprobsf, beam_size, \
                                                               t, beam_seq, beam_seq_logprobs, \
                                                               beam_logprobs_sum, state, \
-                                                              num_clusters, embeds, vocab)
+                                                              num_clusters, embeds, vocab, prev_beams)
             else:
                 beam_seq,\
                 beam_seq_logprobs,\
