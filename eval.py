@@ -135,9 +135,17 @@ for k in vars(infos['opt']).keys():
             vars(opt).update({k: vars(infos['opt'])[k]}) # copy over options from model
 
 vocab = dict()
+c = 0
 for k,v in infos['vocab'].items():
+    if c < 5:
+        print(v)
+        print(str(v))
+        print(v.encode('ascii', 'ignore'))
+    c += 1
     ind = int(k)
-    vocab[ind] = v.encode('ascii', 'ignore').decode('ascii')
+    word = str(v)
+    vocab[ind] = word
+
 opt.vocab = vocab # ix -> word mapping
 
 
