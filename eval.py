@@ -134,7 +134,16 @@ for k in vars(infos['opt']).keys():
         else:
             vars(opt).update({k: vars(infos['opt'])[k]}) # copy over options from model
 
-opt.vocab = infos['vocab'] # ix -> word mapping
+vocab = dict()
+c = 0
+for k,v in infos['vocab']:
+    if c < 10:
+        print(k)
+        print(v)
+    c += 1
+    ind = int(k)
+    vocab[ind] = v
+opt.vocab = vocab # ix -> word mapping
 
 
 opt.embeds = dict()
