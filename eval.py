@@ -140,7 +140,7 @@ if opt.num_clusters > 1:
     print("Running cluster beam search!")
     ## Loads embeddings for all words in vocab
     embeds_file = opt.cluster_embeddings_file
-    opt.embeds = self.load_embeddings(embeds_file, vocab)
+    opt.embeds = load_embeddings(embeds_file, vocab)
         
 
 
