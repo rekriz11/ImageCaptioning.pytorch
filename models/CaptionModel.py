@@ -135,7 +135,8 @@ class CaptionModel(nn.Module):
             print(beam_seq)
             print(beam_seq_logprobs)
 
-            a = b
+            if t >= 1:
+                a = b
             
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates
 
