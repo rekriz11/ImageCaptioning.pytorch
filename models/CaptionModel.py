@@ -95,8 +95,8 @@ class CaptionModel(nn.Module):
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
-            cols = min(beam_size*2, ys.size(1))
-            rows = beam_size*2
+            cols = min(beam_size, ys.size(1))
+            rows = beam_size
             if t == 0:
                 rows = 1
             for c in range(cols): # for each column (word, essentially)
@@ -115,7 +115,7 @@ class CaptionModel(nn.Module):
             #we''ll need these as reference when we fork beams around
                 beam_seq_prev = beam_seq[:t].clone()
                 beam_seq_logprobs_prev = beam_seq_logprobs[:t].clone()
-            for vix in range(beam_size*2):
+            for vix in range(beam_size):
                 v = candidates[vix]
                 #fork beam index q into index vix
                 if t >= 1:
