@@ -77,7 +77,7 @@ class CaptionModel(nn.Module):
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates
 
         def cluster_beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
-                              num_clusters, embeds, vocab):
+                              num_clusters, embeds, vocab, prev_beams):
             #INPUTS:
             #logprobsf: probabilities augmented after diversity
             #beam_size: obvious
@@ -109,6 +109,17 @@ class CaptionModel(nn.Module):
                                            r=local_logprob))
             candidates = sorted(candidates,  key=lambda x: -x['p'])
             print(len(candidates))
+            print(list(vocab.keys())[:10])
+
+            ##### Original Beam #####
+            for i in range(beam_size):
+                prev_beam = prev_beams[candidates[i]['q']]
+                cur_beam = candidates[i]['c'].item()
+
+                print(prev_beam)
+                print(cur_beam)
+
+                print(vocab[cur_beam])
             
             new_state = [_.clone() for _ in state]
             #beam_seq_prev, beam_seq_logprobs_prev
