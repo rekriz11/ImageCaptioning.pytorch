@@ -24,6 +24,34 @@ class CaptionModel(nn.Module):
         # args are the miscelleous inputs to the core in addition to embedded word and state
         # kwargs only accept opt
 
+        ## Loads in embeddings for all words in vocab
+        def load_embeddings(self, embeddings_file, vocab):
+            print("Loading embeddings...")
+            embeds = {}
+            for i, line in enumerate(open(embeddings_file, 'rb')):
+                splitLine = line.split()
+                word = splitLine[0].decode('ascii', 'ignore')
+                embedding = np.array([float(val) for val in splitLine[1:]])
+                embeds[word] = embedding
+
+            ## Filters by words in vocab, and initializes words that don't
+            ## have glove embeddings
+            vocab_embeds = {}
+            found, only_lower, not_found = 0, 0, 0
+            for i, word in enumerate(vocab):
+                try:
+                    vocab_embeds[word] = embeds[word]
+                    found += 1
+                except KeyError:
+                    try:
+                        vocab_embeds[word] = embeds[word.lower()]
+                        only_lower += 1
+                    except KeyError:
+                        not_found += 1
+                        vocab_embeds[word] = np.array([0.0 for i in range(300)])
+
+            return vocab_embeds
+
         def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state):
             #INPUTS:
             #logprobsf: probabilities augmented after diversity
@@ -76,9 +104,87 @@ class CaptionModel(nn.Module):
             state = new_state
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates
 
+        def cluster_beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
+                              num_clusters, embeds, vocab):
+            #INPUTS:
+            #logprobsf: probabilities augmented after diversity
+            #beam_size: obvious
+            #t        : time instant
+            #beam_seq : tensor contanining the beams
+            #beam_seq_logprobs: tensor contanining the beam logprobs
+            #beam_logprobs_sum: tensor contanining joint logprobs
+            #num_cluster: number of clusters
+            #embeds: glove embeddings for vocab
+            #vocab: set of vocab
+            #OUPUTS:
+            #beam_seq : tensor containing the word indices of the decoded captions
+            #beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
+            #beam_logprobs_sum : joint log-probability of each beam
+
+            ys, ix = torch.sort(logprobsf, 1, True)
+            candidates = []
+            cols = min(beam_size*2, ys.size(1))
+            rows = beam_size*2
+            if t == 0:
+                rows = 1
+            for c in range(cols): # for each column (word, essentially)
+                for q in range(rows): # for each beam expansion
+                    # compute logprob of expanding beam q with word in (sorted) position c
+                    local_logprob = ys[q, c]
+                    candidate_logprob = beam_logprobs_sum[q] + local_logprob.cpu()
+                    candidates.append(dict(c=ix[q, c], q=q,
+                                           p=candidate_logprob,
+                                           r=local_logprob))
+            candidates = sorted(candidates,  key=lambda x: -x['p'])
+            
+            new_state = [_.clone() for _ in state]
+            #beam_seq_prev, beam_seq_logprobs_prev
+            if t >= 1:
+            #we''ll need these as reference when we fork beams around
+                beam_seq_prev = beam_seq[:t].clone()
+                beam_seq_logprobs_prev = beam_seq_logprobs[:t].clone()
+            for vix in range(beam_size*2):
+                v = candidates[vix]
+                #fork beam index q into index vix
+                if t >= 1:
+                    beam_seq[:t, vix] = beam_seq_prev[:, v['q']]
+                    beam_seq_logprobs[:t, vix] = beam_seq_logprobs_prev[:, v['q']]
+                #rearrange recurrent states
+                for state_ix in range(len(new_state)):
+                #  copy over state in previous beam q to new beam at vix
+                    new_state[state_ix][:, vix] = state[state_ix][:, v['q']] # dimension one is time step
+                #append new end terminal at the end of this beam
+                beam_seq[t, vix] = v['c'] # c'th word is the continuation
+                beam_seq_logprobs[t, vix] = v['r'] # the raw logprob here
+                beam_logprobs_sum[vix] = v['p'] # the new (sum) logprob along this beam
+            state = new_state
+
+            print(beam_seq)
+            print()
+            print(beam_seq_logprobs)
+            print()
+            print(beam_log_probs_sum)
+            print()
+            print(state)
+            print()
+            print(candidates)
+
+            a = b
+            
+            return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates
+
         # start beam search
         opt = kwargs['opt']
         beam_size = opt.get('beam_size', 10)
+        num_clusters = opt.get('num_clusters', 1)
+
+        if num_clusters > 1:
+            print("Running cluster beam search!")
+            vocab = opt.get('vocab')
+            ## Loads embeddings for all words in vocab
+            embeds_file = opt.get('cluster_embeddings_file')
+            embeds = self.load_embeddings(embeds_file, vocab)
+            
 
         beam_seq = torch.LongTensor(self.seq_length, beam_size).zero_()
         beam_seq_logprobs = torch.FloatTensor(self.seq_length, beam_size).zero_()

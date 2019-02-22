@@ -116,106 +116,14 @@ class AttModel(CaptionModel):
         print('Beam size in sample_beam {}'.format(beam_size))
         batch_size = fc_feats.size(0)
 
-        # embed fc and att feats
-        fc_feats = self.fc_embed(fc_feats)
-        _att_feats = self.att_embed(att_feats.view(-1, self.att_feat_size))
-        att_feats = _att_feats.view(*(att_feats.size()[:-1] + (self.rnn_size,)))
-
-        # Project the attention feats first to reduce memory and computation comsumptions.
-        p_att_feats = self.ctx2att(att_feats.view(-1, self.rnn_size))
-        p_att_feats = p_att_feats.view(*(att_feats.size()[:-1] + (self.att_hid_size,)))
-
-        assert beam_size <= self.vocab_size + 1, 'lets assume this for now, otherwise this corner case causes a few headaches down the road. can be dealt with in future if needed'
-        seq = torch.LongTensor(self.seq_length, batch_size).zero_()
-        seqLogprobs = torch.FloatTensor(self.seq_length, batch_size)
-        # lets process every image independently for now, for simplicity
-
-        all_candidate_sentences = []
-        all_candidate_scores = []
-        self.done_beams = [[] for _ in range(batch_size)]
-
-        for k in range(batch_size):
-            state = self.init_hidden(beam_size)
-            tmp_fc_feats = fc_feats[k:k + 1].expand(beam_size, fc_feats.size(1))
-            tmp_att_feats = att_feats[k:k + 1].expand(*((beam_size,) + att_feats.size()[1:])).contiguous()
-            tmp_p_att_feats = p_att_feats[k:k + 1].expand(*((beam_size,) + p_att_feats.size()[1:])).contiguous()
-
-            for t in range(1):
-                if t == 0:  # input <bos>
-                    it = fc_feats.data.new(beam_size).long().zero_()
-                    xt = self.embed(Variable(it, requires_grad=False))
-
-                output, state = self.core(xt, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, state)
-                logprobs = F.log_softmax(self.logit(output))
-
-            self.done_beams[k] = self.beam_search(state, logprobs, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, opt=opt)
-
-            seq[:, k] = self.done_beams[k][0]['seq']  # the first beam has highest cumulative score
-            seqLogprobs[:, k] = self.done_beams[k][0]['logps']
-
-            candidate_sentences = []
-            candidate_scores = []
-            for p in range(len(self.done_beams[k])):
-                temp_seq = torch.LongTensor(self.seq_length, batch_size).zero_()
-                temp_seq[:, k] = self.done_beams[k][p]['seq']
-                candidate_sentences.append(temp_seq.transpose(0, 1))
-                candidate_scores.append(self.done_beams[k][p]['logps'].sum())
-
-            all_candidate_sentences.append(candidate_sentences)
-            all_candidate_scores.append(candidate_scores)
-
-        # return the samples and their log likelihoods
-        return seq.transpose(0, 1), seqLogprobs.transpose(0, 1), all_candidate_sentences, all_candidate_scores
-
-    ## Loads in embeddings
-    def load_embeddings(self, embeddings_file, vocab):
-        print("Loading embeddings...")
-        embeds = {}
-        for i, line in enumerate(open(embeddings_file, 'rb')):
-            splitLine = line.split()
-            word = splitLine[0].decode('ascii', 'ignore')
-            embedding = np.array([float(val) for val in splitLine[1:]])
-            embeds[word] = embedding
-        print("Done.",len(embeds)," words loaded!")
-
-        ## Filters by words in vocab, and initializes words that don't
-        ## have glove embeddings
-        vocab_embeds = {}
-        found, only_lower, not_found = 0, 0, 0
-        for i, word in enumerate(vocab):
-            try:
-                vocab_embeds[word] = embeds[word]
-                found += 1
-            except KeyError:
-                try:
-                    vocab_embeds[word] = embeds[word.lower()]
-                    only_lower += 1
-                except KeyError:
-                    not_found += 1
-                    vocab_embeds[word] = np.array([0.0 for i in range(300)])
-
-        print("Done. Filtered to ",len(vocab_embeds)," words!")
-        print("Found: " + str(found))
-        print("Only lower: " + str(only_lower))
-        print("Not found: " + str(not_found))
-
-        return vocab_embeds
-
-    def cluster_beam(self, fc_feats, att_feats, opt={}):
-        beam_size = opt.get('beam_size')
-        num_clusters = opt.get('num_clusters')
-        embeds_file = opt.get('cluster_embeddings_file')
         vocab = opt.get('vocab')
-        print('Beam size in cluster_beam {}'.format(beam_size))
-        print('Number of cluster in cluster_beam {}'.format(num_clusters))
-        print("Size of vocab: " + str(len(list(vocab.keys()))))
-
-        embeds = self.load_embeddings(embeds_file, vocab)
-
-        print("Size of embeddings: " + str(len(list(embeds.keys()))))
-
-        batch_size = fc_feats.size(0)
-
+        opt.embeds = dict()
+        if num_clusters > 1:
+            print("Running cluster beam search!")
+            ## Loads embeddings for all words in vocab
+            embeds_file = opt.get('cluster_embeddings_file')
+            opt.embeds = self.load_embeddings(embeds_file, vocab)
+        
         # embed fc and att feats
         fc_feats = self.fc_embed(fc_feats)
         _att_feats = self.att_embed(att_feats.view(-1, self.att_feat_size))
@@ -270,12 +178,8 @@ class AttModel(CaptionModel):
     def sample(self, fc_feats, att_feats, opt={}):
         sample_max = opt.get('sample_max', 1)
         beam_size = opt.get('beam_size', 1)
-        num_clusters = opt.get('num_clusters', 1)
         temperature = opt.get('temperature', 1.0)
-        if beam_size > 1 and num_clusters > 1:
-            print('Performing clustered beam search for beam size: {}'.format(beam_size))
-            return self.cluster_beam(fc_feats, att_feats, opt)
-        elif beam_size > 1:
+        if beam_size > 1:
             print('Performing beam search for beam size: {}'.format(beam_size))
             return self.sample_beam(fc_feats, att_feats, opt)
         print('Performing random sampling')

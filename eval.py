@@ -82,6 +82,35 @@ parser.add_argument('--cluster_embeddings_file', type=str, default='',
 
 opt = parser.parse_args()
 
+## Loads in embeddings for all words in vocab
+def load_embeddings(self, embeddings_file, vocab):
+    print("Loading embeddings...")
+    embeds = {}
+    for i, line in enumerate(open(embeddings_file, 'rb')):
+        splitLine = line.split()
+        word = splitLine[0].decode('ascii', 'ignore')
+        embedding = np.array([float(val) for val in splitLine[1:]])
+        embeds[word] = embedding
+
+    ## Filters by words in vocab, and initializes words that don't
+    ## have glove embeddings
+    vocab_embeds = {}
+    found, only_lower, not_found = 0, 0, 0
+    for i, word in enumerate(vocab):
+        try:
+            vocab_embeds[word] = embeds[word]
+            found += 1
+        except KeyError:
+            try:
+                vocab_embeds[word] = embeds[word.lower()]
+                only_lower += 1
+            except KeyError:
+                not_found += 1
+                vocab_embeds[word] = np.array([0.0 for i in range(300)])
+    print("DONE!")
+
+    return vocab_embeds
+
 # Load infos
 with open(opt.infos_path, 'rb') as f:
     infos = cPickle.load(f)
@@ -106,6 +135,14 @@ for k in vars(infos['opt']).keys():
             vars(opt).update({k: vars(infos['opt'])[k]}) # copy over options from model
 
 opt.vocab = infos['vocab'] # ix -> word mapping
+
+if opt.num_clusters > 1:
+    print("Running cluster beam search!")
+    ## Loads embeddings for all words in vocab
+    embeds_file = opt.get('cluster_embeddings_file')
+    opt.embeds = self.load_embeddings(embeds_file, vocab)
+        
+
 
 # Setup the model
 model = models.setup(opt)
