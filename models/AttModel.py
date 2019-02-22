@@ -115,14 +115,6 @@ class AttModel(CaptionModel):
         beam_size = opt.get('beam_size', 10)
         print('Beam size in sample_beam {}'.format(beam_size))
         batch_size = fc_feats.size(0)
-
-        vocab = opt.get('vocab')
-        opt.embeds = dict()
-        if num_clusters > 1:
-            print("Running cluster beam search!")
-            ## Loads embeddings for all words in vocab
-            embeds_file = opt.get('cluster_embeddings_file')
-            opt.embeds = self.load_embeddings(embeds_file, vocab)
         
         # embed fc and att feats
         fc_feats = self.fc_embed(fc_feats)
