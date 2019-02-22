@@ -109,7 +109,7 @@ class CaptionModel(nn.Module):
                                            p=candidate_logprob,
                                            r=local_logprob))
             candidates = sorted(candidates,  key=lambda x: -x['p'])
-            print(len(candidates))
+            print(candidates)
 
             ##### Original Beam #####
             cur_beams = []
