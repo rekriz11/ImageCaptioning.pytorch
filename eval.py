@@ -137,12 +137,17 @@ for k in vars(infos['opt']).keys():
 opt.vocab = infos['vocab'] # ix -> word mapping
 
 
-print("HELLOOOOOO")
 opt.embeds = dict()
 if opt.num_clusters > 1:
     ## Loads embeddings for all words in vocab
     embeds_file = opt.cluster_embeddings_file
-    opt.embeds = load_embeddings(embeds_file, opt.vocab)
+    #opt.embeds = load_embeddings(embeds_file, opt.vocab)
+
+    embeds = dict()
+    for v in opt.vocab:
+        embeds[v] = [0.0 for i in range(300)]
+    opt.embeds = embeds
+    
         
 # Setup the model
 model = models.setup(opt)
