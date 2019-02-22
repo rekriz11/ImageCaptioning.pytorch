@@ -13,6 +13,16 @@ BATCH_SIZE=10
 
 mkdir -p OUTPUT_DIRECTORY
 
+echo "Beam Search, number of candidates=${BATCH_SIZE}, hidden_state_noise=0.3"
+python eval.py --model "$MODEL" \
+              --infos_path "$MODEL_INFOS_PATH" \
+              --image_folder "$IMAGE_DIRECTORY" \
+              --num_images $NUM_IMAGES \
+              --sample_max 1 \
+              --beam_size $BATCH_SIZE \
+              --hidden_state_noise 0.3
+              --output_json_file_path "$OUTPUT_DIRECTORY/bs_npad0.3.json"
+
 echo "Beam Search, number of candidates=${BATCH_SIZE}"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
@@ -21,7 +31,6 @@ python eval.py --model "$MODEL" \
               --sample_max 1 \
               --beam_size $BATCH_SIZE \
               --output_json_file_path "$OUTPUT_DIRECTORY/bs.json"
-
 
 echo "Random sampling, temperature=1.0"
 python eval.py --model "$MODEL" \

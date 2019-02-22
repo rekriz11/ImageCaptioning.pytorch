@@ -140,20 +140,12 @@ class AttModel(CaptionModel):
             tmp_att_feats = att_feats[k:k + 1].expand(*((beam_size,) + att_feats.size()[1:])).contiguous()
             tmp_p_att_feats = p_att_feats[k:k + 1].expand(*((beam_size,) + p_att_feats.size()[1:])).contiguous()
 
-            for t in range(1):
-                if t == 0:  # input <bos>
-                    it = fc_feats.data.new(beam_size).long().zero_()
-                    xt = self.embed(Variable(it, requires_grad=False))
+            it = fc_feats.data.new(beam_size).long().zero_()
+            xt = self.embed(Variable(it, requires_grad=False))
 
-                output, state = self.core(xt, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, state)
-                logprobs = F.log_softmax(self.logit(output))
-                import pdb; pdb.set_trace()
-                if opt['hidden_state_noise'] > 0.0:
-                    sigma = opt['hidden_state_noise'] / float(t+1)
-                    random_noise = torch.cuda.FloatTensor(state.size()).normal_(0, sigma) 
-                    # Use this line if running on CPU.
-                    # random_noise = torch.FloatTensor(state.size()).normal_(0, sigma) 
-                    state += random_noise
+            output, state = self.core(xt, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, state)
+
+            logprobs = F.log_softmax(self.logit(output))
 
             self.done_beams[k] = self.beam_search(state, logprobs, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, opt=opt)
 
@@ -231,6 +223,7 @@ class AttModel(CaptionModel):
                 seqLogprobs.append(sampleLogprobs.view(-1))
 
             output, state = self.core(xt, fc_feats, att_feats, p_att_feats, state)
+
             logprobs = F.log_softmax(self.logit(output))
 
         return torch.cat([_.unsqueeze(1) for _ in seq], 1), torch.cat([_.unsqueeze(1) for _ in seqLogprobs], 1)
