@@ -135,7 +135,7 @@ class CaptionModel(nn.Module):
             print()
             print(beam_seq_logprobs)
             print()
-            print(beam_log_probs_sum)
+            print(beam_logprobs_sum)
             print()
             print(state)
             print()
