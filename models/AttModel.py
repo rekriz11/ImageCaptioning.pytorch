@@ -210,7 +210,7 @@ class AttModel(CaptionModel):
         print('Number of cluster in cluster_beam {}'.format(num_clusters))
         print("Size of vocab: " + str(len(list(vocab.keys()))))
 
-        embeds = load_embeddings(embeds_file, vocab)
+        embeds = self.load_embeddings(embeds_file, vocab)
 
         print("Size of embeddings: " + str(len(list(embeds.keys()))))
 

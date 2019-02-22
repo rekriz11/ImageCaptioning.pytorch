@@ -65,7 +65,6 @@ def language_eval(dataset, preds, model_id, split):
 
 
 def eval_split(model, crit, loader, eval_kwargs={}):
-    print('Evaluation Arguments {}'.format(eval_kwargs))
     verbose = eval_kwargs.get('verbose', True)
     num_images = eval_kwargs.get('num_images', eval_kwargs.get('val_images_use', -1))
     split = eval_kwargs.get('split', 'val')
