@@ -74,6 +74,12 @@ parser.add_argument('--id', type=str, default='',
 parser.add_argument('--output_json_file_path', type=str, default='output.json')
 parser.add_argument('--number_of_samples', type=int, default=4, help='Number of samples when sample_max is 0')
 
+# Options related to clustered beam search
+parser.add_argument('--num_clusters', type=int, default=1,
+                    help='Number of clusters if using clustered beam search')
+parser.add_argument('--cluster_embeddings_file', type=str, default='',
+                    help='Embeddings file if using clustered beam search.')
+
 opt = parser.parse_args()
 
 # Load infos
@@ -99,7 +105,7 @@ for k in vars(infos['opt']).keys():
         else:
             vars(opt).update({k: vars(infos['opt'])[k]}) # copy over options from model
 
-vocab = infos['vocab'] # ix -> word mapping
+opt.vocab = infos['vocab'] # ix -> word mapping
 
 # Setup the model
 model = models.setup(opt)
