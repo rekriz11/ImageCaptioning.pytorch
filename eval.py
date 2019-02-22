@@ -136,6 +136,8 @@ for k in vars(infos['opt']).keys():
 
 opt.vocab = infos['vocab'] # ix -> word mapping
 
+
+print("HELLOOOOOO")
 opt.embeds = dict()
 if opt.num_clusters > 1:
     ## Loads embeddings for all words in vocab
