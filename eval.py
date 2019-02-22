@@ -136,7 +136,7 @@ for k in vars(infos['opt']).keys():
 
 vocab = dict()
 c = 0
-for k,v in infos['vocab']:
+for k,v in infos['vocab'].items():
     if c < 10:
         print(k)
         print(v)
