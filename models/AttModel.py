@@ -147,6 +147,13 @@ class AttModel(CaptionModel):
 
                 output, state = self.core(xt, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, state)
                 logprobs = F.log_softmax(self.logit(output))
+                import pdb; pdb.set_trace()
+                if opt['hidden_state_noise'] > 0.0:
+                    sigma = opt['hidden_state_noise'] / float(t+1)
+                    random_noise = torch.cuda.FloatTensor(state.size()).normal_(0, sigma) 
+                    # Use this line if running on CPU.
+                    # random_noise = torch.FloatTensor(state.size()).normal_(0, sigma) 
+                    state += random_noise
 
             self.done_beams[k] = self.beam_search(state, logprobs, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, opt=opt)
 
@@ -159,6 +166,7 @@ class AttModel(CaptionModel):
                 temp_seq = torch.LongTensor(self.seq_length, batch_size).zero_()
                 temp_seq[:, k] = self.done_beams[k][p]['seq']
                 candidate_sentences.append(temp_seq.transpose(0, 1))
+
                 candidate_scores.append(self.done_beams[k][p]['logps'].sum())
 
             all_candidate_sentences.append(candidate_sentences)
