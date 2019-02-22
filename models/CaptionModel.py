@@ -132,16 +132,7 @@ class CaptionModel(nn.Module):
             state = new_state
 
             print(beam_seq)
-            print()
             print(beam_seq_logprobs)
-            print()
-            print(beam_logprobs_sum)
-            print()
-            print(state)
-            print()
-            print(candidates)
-
-            a = b
             
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates
 
