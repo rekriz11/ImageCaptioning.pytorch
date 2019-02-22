@@ -137,7 +137,7 @@ for k in vars(infos['opt']).keys():
 vocab = dict()
 for k,v in infos['vocab'].items():
     ind = int(k)
-    vocab[ind] = v
+    vocab[ind] = v.encode('ascii', 'ignore').decode('ascii')
 opt.vocab = vocab # ix -> word mapping
 
 
