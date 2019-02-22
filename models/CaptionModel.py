@@ -108,6 +108,8 @@ class CaptionModel(nn.Module):
                                            p=candidate_logprob,
                                            r=local_logprob))
             candidates = sorted(candidates,  key=lambda x: -x['p'])
+
+            print(candidates)
             
             new_state = [_.clone() for _ in state]
             #beam_seq_prev, beam_seq_logprobs_prev
@@ -133,6 +135,8 @@ class CaptionModel(nn.Module):
 
             print(beam_seq)
             print(beam_seq_logprobs)
+
+            a = b
             
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates
 
