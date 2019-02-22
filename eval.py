@@ -83,7 +83,7 @@ parser.add_argument('--cluster_embeddings_file', type=str, default='',
 opt = parser.parse_args()
 
 ## Loads in embeddings for all words in vocab
-def load_embeddings(self, embeddings_file, vocab):
+def load_embeddings(embeddings_file, vocab):
     print("Loading embeddings...")
     embeds = {}
     for i, line in enumerate(open(embeddings_file, 'rb')):
