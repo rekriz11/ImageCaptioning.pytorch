@@ -24,34 +24,6 @@ class CaptionModel(nn.Module):
         # args are the miscelleous inputs to the core in addition to embedded word and state
         # kwargs only accept opt
 
-        ## Loads in embeddings for all words in vocab
-        def load_embeddings(self, embeddings_file, vocab):
-            print("Loading embeddings...")
-            embeds = {}
-            for i, line in enumerate(open(embeddings_file, 'rb')):
-                splitLine = line.split()
-                word = splitLine[0].decode('ascii', 'ignore')
-                embedding = np.array([float(val) for val in splitLine[1:]])
-                embeds[word] = embedding
-
-            ## Filters by words in vocab, and initializes words that don't
-            ## have glove embeddings
-            vocab_embeds = {}
-            found, only_lower, not_found = 0, 0, 0
-            for i, word in enumerate(vocab):
-                try:
-                    vocab_embeds[word] = embeds[word]
-                    found += 1
-                except KeyError:
-                    try:
-                        vocab_embeds[word] = embeds[word.lower()]
-                        only_lower += 1
-                    except KeyError:
-                        not_found += 1
-                        vocab_embeds[word] = np.array([0.0 for i in range(300)])
-
-            return vocab_embeds
-
         def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state):
             #INPUTS:
             #logprobsf: probabilities augmented after diversity
@@ -181,9 +153,7 @@ class CaptionModel(nn.Module):
         if num_clusters > 1:
             print("Running cluster beam search!")
             vocab = opt.get('vocab')
-            ## Loads embeddings for all words in vocab
-            embeds_file = opt.get('cluster_embeddings_file')
-            embeds = self.load_embeddings(embeds_file, vocab)
+            embeds = opt.get('embeds')
             
 
         beam_seq = torch.LongTensor(self.seq_length, beam_size).zero_()
@@ -200,18 +170,27 @@ class CaptionModel(nn.Module):
             logprobsf = logprobs.data.float() # lets go to CPU for more efficiency in indexing operations
             # suppress UNK tokens in the decoding
             logprobsf[:,logprobsf.size(1)-1] =  logprobsf[:, logprobsf.size(1)-1] - 1000  
-        
-            beam_seq,\
-            beam_seq_logprobs,\
-            beam_logprobs_sum,\
-            state,\
-            candidates_divm = beam_step(logprobsf,
-                                        beam_size,
-                                        t,
-                                        beam_seq,
-                                        beam_seq_logprobs,
-                                        beam_logprobs_sum,
-                                        state)
+
+            ## Run special clustered beam step!
+            if num_clusters > 1:
+                beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
+                          candidates_divm = cluster_beam_step(logprobsf, beam_size, \
+                                                              t, beam_seq, beam_seq_logprobs, \
+                                                              beam_logprobs_sum, state, \
+                                                              num_clusters, embeds, vocab)
+            else:
+                beam_seq,\
+                beam_seq_logprobs,\
+                beam_logprobs_sum,\
+                state,\
+                candidates_divm = beam_step(logprobsf,
+                                            beam_size,
+                                            t,
+                                            beam_seq,
+                                            beam_seq_logprobs,
+                                            beam_logprobs_sum,
+                                            state)
+                
 
             for vix in range(beam_size):
                 # if time's up... or if end token is reached then copy beams
