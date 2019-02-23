@@ -176,7 +176,6 @@ class CaptionModel(nn.Module):
                     break
                 else:
                     continue
-            print(indices)
 
             ## If there aren't enough in each cluster, add candidates with highest scores
             if len(new_candidates) < beam_size:
@@ -188,7 +187,6 @@ class CaptionModel(nn.Module):
                             break
             print(indices)
             candidates = sorted(new_candidates,  key=lambda x: -x['p'])
-            print(candidates)
 
             ## New beam
             new_beams = []
@@ -224,6 +222,7 @@ class CaptionModel(nn.Module):
                 beam_logprobs_sum[vix] = v['p'] # the new (sum) logprob along this beam
             state = new_state
 
+            '''
             print(beam_seq)
             print(beam_seq_logprobs)
 
@@ -231,6 +230,7 @@ class CaptionModel(nn.Module):
                 print(vocab[beam_seq[0][i].item()])
 
             a = b
+            '''
             
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates, cur_beams
 
