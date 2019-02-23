@@ -86,7 +86,13 @@ class CaptionModel(nn.Module):
             candidates = sorted(candidates,  key=lambda x: -x['p'])
             new_beams = []
 
-            if t >= 1 and k_per_cand != 0:
+            ## New beam (for debugging k_per_cand)
+            if t == 0 and k_per_cand != 0:
+                for i in range(beam_size):
+                    new_beams.append([vocab[candidates[i]['c'].item()]])
+                print("\nFIRST BEAM: " + str(new_beams))
+
+            elif t >= 1 and k_per_cand != 0:
                 ## Original beam (for debugging)
                 orig_beams = []
                 for i in range(len(candidates)):
@@ -114,7 +120,7 @@ class CaptionModel(nn.Module):
                     i += 1
                 candidates = new_candidates
                 
-                ## New beam (for debugging
+                ## New beam (for debugging)
                 for i in range(beam_size):
                     try:
                         new_beam = vocab[candidates[i]['c'].item()]
@@ -128,7 +134,7 @@ class CaptionModel(nn.Module):
                 print("\nPOST-K_PER_CAND BEAM: " + str(new_beams))
                 print(indices)
                 
-            ## If doing Clustered Beam Search
+            ## If doing Clustered Beam Search:
             elif num_clusters > 1:
                 ## Original beam
                 orig_beams = []
