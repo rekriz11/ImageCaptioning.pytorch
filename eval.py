@@ -23,7 +23,11 @@ import torch
 def load_embeddings(embeddings_file, vocab):
     print("Loading embeddings...")
     embeds = {}
+    c = 0
     for i, line in enumerate(open(embeddings_file, 'rb')):
+        if c > 100:
+            break
+        c += 1
         splitLine = line.split()
         word = splitLine[0].decode('ascii', 'ignore')
         embedding = np.array([float(val) for val in splitLine[1:]])
