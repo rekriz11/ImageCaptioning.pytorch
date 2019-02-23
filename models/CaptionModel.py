@@ -123,7 +123,9 @@ class CaptionModel(nn.Module):
             candidates = sorted(candidates,  key=lambda x: -x['p'])
             print(candidates)
 
-            ## Original beam
+            print(list(embeds.keys())[:10])
+
+            ## Original beam (for debugging)
             orig_beams = []
             for i in range(beam_size*2):
                 orig_beam = vocab[candidates[i]['c'].item()]
