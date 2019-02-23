@@ -125,12 +125,15 @@ class CaptionModel(nn.Module):
             ## Original beam (for debugging)
             orig_beams = []
             for i in range(beam_size*2):
-                orig_beam = vocab[candidates[i]['c'].item()]
-                if t >= 1:
-                    prev_beam = prev_beams[candidates[i]['q']]
-                    orig_beams.append(prev_beam + [orig_beam])
-                else:
-                    orig_beams.append([orig_beam])
+                try:
+                    orig_beam = vocab[candidates[i]['c'].item()]
+                    if t >= 1:
+                        prev_beam = prev_beams[candidates[i]['q']]
+                        orig_beams.append(prev_beam + [orig_beam])
+                    else:
+                        orig_beams.append([orig_beam])
+                except KeyError:
+                    orig_beams.append(prev_beams[candidates[i]['q']])
             print("\nORIGINAL BEAM: " + str(orig_beams))
 
             ## Gets averaged beam embeddings
