@@ -172,16 +172,11 @@ class CaptionModel(nn.Module):
                     new_candidates.append(candidates[i])
                     indices.append(i)
                     cluster_counts[l] += 1
-                    print(cluster_counts[l])
-                    print(new_candidates)
-                    print()
                 elif min(cluster_counts) == math.ceil(beam_size / num_clusters):
                     break
                 else:
-                    print("HI")
                     continue
-            print(new_candidates)
-            print()
+            print(indices)
 
             ## If there aren't enough in each cluster, add candidates with highest scores
             if len(new_candidates) < beam_size:
@@ -191,8 +186,7 @@ class CaptionModel(nn.Module):
                             new_candidates.append(candidates[i])
                             indices.append(i)
                             break
-            print(new_candidates)
-            print()
+            print(indices)
             candidates = sorted(new_candidates,  key=lambda x: -x['p'])
             print(candidates)
 
