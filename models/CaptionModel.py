@@ -109,7 +109,7 @@ class CaptionModel(nn.Module):
 
                 new_candidates = []
                 indices = []
-                num_per_cand = [0 for i in range(len(beam_size))]
+                num_per_cand = [0 for i in range(beam_size)]
                 i = 0
                 while len(new_candidates) < beam_size:
                     prev_beam_id = candidates[i]['q']
