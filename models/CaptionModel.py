@@ -248,7 +248,7 @@ class CaptionModel(nn.Module):
         num_clusters = opt.get('num_clusters', 1)
 
         if num_clusters > 1:
-            print("Running cluster beam search!")
+            #print("Running cluster beam search!")
             vocab = opt.get('vocab')
             embeds = opt.get('embeds')
             
