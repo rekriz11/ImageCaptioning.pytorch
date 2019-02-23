@@ -232,7 +232,7 @@ class CaptionModel(nn.Module):
             a = b
             '''
             
-            return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates, cur_beams
+            return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates, new_beams
 
         # start beam search
         opt = kwargs['opt']
