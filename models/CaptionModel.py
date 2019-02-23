@@ -59,6 +59,10 @@ class CaptionModel(nn.Module):
             # beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
             # beam_logprobs_sum : joint log-probability of each beam
             # new_beams: new beam in list[str] form (FOR CLUSTERED BEAM ONLY)
+
+            for k,v in opt:
+                if k != 'vocab':
+                    print(str(k) + "\t" + str(v))
             
 
             ys, ix = torch.sort(logprobsf, 1, True)
