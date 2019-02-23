@@ -57,8 +57,8 @@ def load_embeddings(embeddings_file, vocab):
 
     return vocab_embeds
 
-numpy.random.seed(37)
-random.seed(37)
+numpy.random.seed(43)
+random.seed(43)
 
 # Input arguments and options
 parser = argparse.ArgumentParser()
