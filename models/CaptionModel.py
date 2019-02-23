@@ -94,7 +94,7 @@ class CaptionModel(nn.Module):
                 print("\nFIRST BEAM: " + str(new_beams))
             '''
 
-            elif t >= 1 and k_per_cand != 0:
+            if t >= 1 and k_per_cand != 0:
                 '''
                 ## Original beam (for debugging)
                 print("\nORIGINAL BEAM: ")
