@@ -154,6 +154,8 @@ class CaptionModel(nn.Module):
                 min_distance = 1e10
                 label = -1
                 for i, c in enumerate(centroids):
+                    print(e)
+                    print(c)
                     dist = self.calc_distance(c, e)
 
                     if dist < min_distance:
