@@ -131,9 +131,6 @@ class CaptionModel(nn.Module):
                         new_beams.append(prev_beams[candidates[i]['q']])
                         print(prev_beams[candidates[i]['q']])
                 print(indices)
-
-                if t == 2:
-                    a = b
                 
             ## If doing Clustered Beam Search:
             elif num_clusters > 1:
