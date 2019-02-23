@@ -171,7 +171,7 @@ class AttModel(CaptionModel):
 
     def sample(self, fc_feats, att_feats, opt={}):
         print(len(list(opt.keys())))
-        print("NMCLSTR: " + str(opt.num_clusters))
+        print("NMCLSTR: " + str(opt['num_clusters']))
         sample_max = opt.get('sample_max', 1)
         beam_size = opt.get('beam_size', 1)
         temperature = opt.get('temperature', 1.0)
@@ -179,7 +179,6 @@ class AttModel(CaptionModel):
 
         if beam_size > 1:
             print('Performing beam search for beam size: {}'.format(beam_size))
-            print("Number of clusters: " + str(opt.num_clusters))
             return self.sample_beam(fc_feats, att_feats, opt)
         print('Performing random sampling')
 
