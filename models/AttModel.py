@@ -177,6 +177,7 @@ class AttModel(CaptionModel):
 
         if beam_size > 1:
             print('Performing beam search for beam size: {}'.format(beam_size))
+            print("Number of clusters: " + str(opt.num_clusters))
             return self.sample_beam(fc_feats, att_feats, opt)
         print('Performing random sampling')
 
