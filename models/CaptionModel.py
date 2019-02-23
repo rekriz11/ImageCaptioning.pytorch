@@ -128,8 +128,6 @@ class CaptionModel(nn.Module):
                 orig_beam = vocab[candidates[i]['c'].item()]
                 if t >= 1:
                     prev_beam = prev_beams[candidates[i]['q']]
-                    print(candidates[i]['q'])
-                    print(prev_beam)
                     orig_beams.append(prev_beam + [orig_beam])
                 else:
                     orig_beams.append([orig_beam])
@@ -195,7 +193,9 @@ class CaptionModel(nn.Module):
             for i in range(beam_size):
                 new_beam = vocab[candidates[i]['c'].item()]
                 if t >= 1:
+                    print(candidates[i]['q'])
                     prev_beam = prev_beams[candidates[i]['q']]
+                    print(prev_beam)
                     new_beam.append(prev_beam + [new_beam])
                 else:
                     new_beams.append([new_beam])
