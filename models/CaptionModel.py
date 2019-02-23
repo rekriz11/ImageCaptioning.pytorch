@@ -190,7 +190,7 @@ class CaptionModel(nn.Module):
                             new_candidates.append(candidates[i])
                             indices.append(i)
                             break
-            print(indices)
+            #print(indices)
             candidates = sorted(new_candidates,  key=lambda x: -x['p'])
 
             ## New beam

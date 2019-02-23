@@ -28,7 +28,7 @@ import numpy as np
 class AttModel(CaptionModel):
     def __init__(self, opt):
         super(AttModel, self).__init__()
-        print('AttModel')
+        #print('AttModel')
         self.vocab_size = opt.vocab_size
         self.input_encoding_size = opt.input_encoding_size
         # self.rnn_type = opt.rnn_type
@@ -514,6 +514,6 @@ class Att2in2Model(AttModel):
 class TopDownModel(AttModel):
     def __init__(self, opt):
         super(TopDownModel, self).__init__(opt)
-        print('TopDownModel')
+        #print('TopDownModel')
         self.num_layers = 2
         self.core = TopDownCore(opt)

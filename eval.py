@@ -25,11 +25,7 @@ import random
 def load_embeddings(embeddings_file, vocab):
     print("Loading embeddings...")
     embeds = {}
-    c = 0
     for i, line in enumerate(open(embeddings_file, 'rb')):
-        if c > 100000:
-            break
-        c += 1
         splitLine = line.split()
         word = splitLine[0].decode('ascii', 'ignore')
         embedding = np.array([float(val) for val in splitLine[1:]])
@@ -57,8 +53,8 @@ def load_embeddings(embeddings_file, vocab):
 
     return vocab_embeds
 
-numpy.random.seed(43)
-random.seed(43)
+numpy.random.seed(37)
+random.seed(37)
 
 # Input arguments and options
 parser = argparse.ArgumentParser()
