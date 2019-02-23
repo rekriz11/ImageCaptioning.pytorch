@@ -154,8 +154,6 @@ class CaptionModel(nn.Module):
                 min_distance = 1e10
                 label = -1
                 for i, c in enumerate(centroids):
-                    print(e)
-                    print(c)
                     dist = calc_distance(c, e)
 
                     if dist < min_distance:
@@ -190,6 +188,7 @@ class CaptionModel(nn.Module):
             ## New beam
             new_beams = []
             for i in range(beam_size*2):
+                print(candidates[i]['c'].item())
                 new_beam = vocab[candidates[i]['c'].item()]
                 if t >= 1:
                     prev_beam = prev_beams[candidates[i]['q']]
