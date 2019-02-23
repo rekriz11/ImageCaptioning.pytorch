@@ -94,18 +94,17 @@ class CaptionModel(nn.Module):
 
             elif t >= 1 and k_per_cand != 0:
                 ## Original beam (for debugging)
+                print("\nORIGINAL BEAM: ")
                 orig_beams = []
-                for i in range(len(candidates)):
+                for i in range(beam_size):
                     try:
                         orig_beam = vocab[candidates[i]['c'].item()]
-                        if t >= 1:
-                            prev_beam = prev_beams[candidates[i]['q']]
-                            orig_beams.append(prev_beam + [orig_beam])
-                        else:
-                            orig_beams.append([orig_beam])
+                        prev_beam = prev_beams[candidates[i]['q']]
+                        orig_beams.append(prev_beam + [orig_beam])
+                        print(prev_beam + [orig_beam])
                     except KeyError:
                         orig_beams.append(prev_beams[candidates[i]['q']])
-                print("\nORIGINAL BEAM: " + str(orig_beams))
+                        print(prev_beams[candidates[i]['q']])
 
                 new_candidates = []
                 indices = []
@@ -121,17 +120,16 @@ class CaptionModel(nn.Module):
                 candidates = new_candidates
                 
                 ## New beam (for debugging)
+                print("\nPOST-K_PER_CAND BEAM: ")
                 for i in range(beam_size):
                     try:
                         new_beam = vocab[candidates[i]['c'].item()]
-                        if t >= 1:
-                            prev_beam = prev_beams[candidates[i]['q']]
-                            new_beams.append(prev_beam + [new_beam])
-                        else:
-                            new_beams.append([new_beam])
+                        prev_beam = prev_beams[candidates[i]['q']]
+                        new_beams.append(prev_beam + [new_beam])
+                        print(prev_beam + [new_beam])
                     except KeyError:
                         new_beams.append(prev_beams[candidates[i]['q']])
-                print("\nPOST-K_PER_CAND BEAM: " + str(new_beams))
+                        print(prev_beams[candidates[i]['q']])
                 print(indices)
                 
             ## If doing Clustered Beam Search:
