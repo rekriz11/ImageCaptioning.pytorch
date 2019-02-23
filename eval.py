@@ -25,6 +25,7 @@ import random
 def load_embeddings(embeddings_file, vocab):
     print("Loading embeddings...")
     embeds = {}
+    c = 0
     for i, line in enumerate(open(embeddings_file, 'rb')):
         splitLine = line.split()
         word = splitLine[0].decode('ascii', 'ignore')
@@ -46,10 +47,6 @@ def load_embeddings(embeddings_file, vocab):
             except KeyError:
                 not_found += 1
                 vocab_embeds[v] = np.array([0.0 for i in range(300)])
-    print("DONE!")
-    print("Found: " + str(found))
-    print("Found lower: " + str(only_lower))
-    print("Not found: " + str(not_found))
 
     return vocab_embeds
 
