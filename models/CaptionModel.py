@@ -121,9 +121,6 @@ class CaptionModel(nn.Module):
                                            p=candidate_logprob,
                                            r=local_logprob))
             candidates = sorted(candidates,  key=lambda x: -x['p'])
-            print(candidates)
-
-            print(list(embeds.keys())[:10])
 
             ## Original beam (for debugging)
             orig_beams = []
@@ -134,7 +131,7 @@ class CaptionModel(nn.Module):
                     orig_beams.append(prev_beam + [orig_beam])
                 else:
                     orig_beams.append([orig_beam])
-            print(orig_beams)
+            print("\nORIGINAL BEAM: " + str(orig_beams))
 
             ## Gets averaged beam embeddings
             beam_embeds = []
@@ -195,7 +192,7 @@ class CaptionModel(nn.Module):
                     new_beam.append(prev_beam + [new_beam])
                 else:
                     new_beams.append([new_beam])
-            print(new_beams)
+            print("\nPOST-CLUSTERING BEAM: " + str(new_beams))
                 
             
             new_state = [_.clone() for _ in state]

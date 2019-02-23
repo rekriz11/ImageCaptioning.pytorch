@@ -33,17 +33,17 @@ def load_embeddings(embeddings_file, vocab):
     ## have glove embeddings
     vocab_embeds = {}
     found, only_lower, not_found = 0, 0, 0
-    for i, word in enumerate(vocab):
+    for k,v in enumerate(vocab):
         try:
-            vocab_embeds[word] = embeds[word]
+            vocab_embeds[v] = embeds[v]
             found += 1
         except KeyError:
             try:
-                vocab_embeds[word] = embeds[word.lower()]
+                vocab_embeds[v] = embeds[v.lower()]
                 only_lower += 1
             except KeyError:
                 not_found += 1
-                vocab_embeds[word] = np.array([0.0 for i in range(300)])
+                vocab_embeds[v] = np.array([0.0 for i in range(300)])
     print("DONE!")
 
     return vocab_embeds
