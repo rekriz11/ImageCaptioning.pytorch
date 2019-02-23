@@ -25,16 +25,16 @@ class CaptionModel(nn.Module):
     def __init__(self):
         super(CaptionModel, self).__init__()
 
+    ## Calculates distance between 2 vectors
+    def calc_distance(x, y):
+        nx = np.asarray(x).reshape(1, -1)
+        ny = np.asarray(y).reshape(1, -1)
+        dist = euclidean_distances(nx, ny)
+        return dist[0][0]
+
     def beam_search(self, state, logprobs, *args, **kwargs):
         # args are the miscelleous inputs to the core in addition to embedded word and state
         # kwargs only accept opt
-
-        ## Calculates distance between 2 vectors
-        def calc_distance(x, y):
-            nx = np.asarray(x).reshape(1, -1)
-            ny = np.asarray(y).reshape(1, -1)
-            dist = euclidean_distances(nx, ny)
-            return dist[0][0]
 
         def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state):
             #INPUTS:
