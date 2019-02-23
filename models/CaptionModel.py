@@ -60,7 +60,7 @@ class CaptionModel(nn.Module):
             # beam_logprobs_sum : joint log-probability of each beam
             # new_beams: new beam in list[str] form (FOR CLUSTERED BEAM ONLY)
 
-            for k,v in opt:
+            for k,v in opt.items():
                 if k != 'vocab':
                     print(str(k) + "\t" + str(v))
             
