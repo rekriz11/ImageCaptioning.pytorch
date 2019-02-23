@@ -18,6 +18,43 @@ import eval_utils
 import argparse
 import misc.utils as utils
 import torch
+import numpy
+import random
+
+## Loads in embeddings for all words in vocab
+def load_embeddings(embeddings_file, vocab):
+    print("Loading embeddings...")
+    embeds = {}
+    for i, line in enumerate(open(embeddings_file, 'rb')):
+        splitLine = line.split()
+        word = splitLine[0].decode('ascii', 'ignore')
+        embedding = np.array([float(val) for val in splitLine[1:]])
+        embeds[word] = embedding
+
+    ## Filters by words in vocab, and initializes words that don't
+    ## have glove embeddings
+    vocab_embeds = {}
+    found, only_lower, not_found = 0, 0, 0
+    for k,v in vocab.items():
+        try:
+            vocab_embeds[v] = embeds[v]
+            found += 1
+        except KeyError:
+            try:
+                vocab_embeds[v] = embeds[v.lower()]
+                only_lower += 1
+            except KeyError:
+                not_found += 1
+                vocab_embeds[v] = np.array([0.0 for i in range(300)])
+    print("DONE!")
+    print("Found: " + str(found))
+    print("Found lower: " + str(only_lower))
+    print("Not found: " + str(not_found))
+
+    return vocab_embeds
+
+numpy.random.seed(37)
+random.seed(37)
 
 # Input arguments and options
 parser = argparse.ArgumentParser()
@@ -77,6 +114,12 @@ parser.add_argument('--output_json_file_path', type=str, default='output.json')
 parser.add_argument('--number_of_samples', type=int, default=4, help='Number of samples when sample_max is 0 (for random sampling)')
 parser.add_argument('--top_c', type=int, default=-1, help='Top c random sampling (when sample max is 0)')
 
+# Options related to clustered beam search
+parser.add_argument('--num_clusters', type=int, default=1,
+                    help='Number of clusters if using clustered beam search')
+parser.add_argument('--cluster_embeddings_file', type=str, default='',
+                    help='Embeddings file if using clustered beam search.')
+
 opt = parser.parse_args()
 
 # Load infos
@@ -104,7 +147,27 @@ for k in vars(infos['opt']).keys():
         else:
             vars(opt).update({k: vars(infos['opt'])[k]}) # copy over options from model
 
-vocab = infos['vocab'] # ix -> word mapping
+vocab = dict()
+for k,v in infos['vocab'].items():
+    ind = int(k)
+    word = str(v)
+    vocab[ind] = word
+
+opt.vocab = vocab # ix -> word mapping
+
+
+opt.embeds = dict()
+if opt.num_clusters > 1:
+    ## Loads embeddings for all words in vocab
+    embeds_file = opt.cluster_embeddings_file
+    opt.embeds = load_embeddings(embeds_file, opt.vocab)
+
+    '''
+    embeds = dict()
+    for k,v in vocab.items():
+        embeds[v] = [0.0 for i in range(300)]
+    opt.embeds = embeds
+    '''
 
 # Setup the model
 model = models.setup(opt)
