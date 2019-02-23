@@ -191,12 +191,15 @@ class CaptionModel(nn.Module):
             ## New beam
             new_beams = []
             for i in range(beam_size):
-                new_beam = vocab[candidates[i]['c'].item()]
-                if t >= 1:
-                    prev_beam = prev_beams[candidates[i]['q']]
-                    new_beams.append(prev_beam + [new_beam])
-                else:
-                    new_beams.append([new_beam])
+                try:
+                    new_beam = vocab[candidates[i]['c'].item()]
+                    if t >= 1:
+                        prev_beam = prev_beams[candidates[i]['q']]
+                        new_beams.append(prev_beam + [new_beam])
+                    else:
+                        new_beams.append([new_beam])
+                except KeyError:
+                    new_beams.append(prev_beams[candidates[i]['q']])
             print("\nPOST-CLUSTERING BEAM: " + str(new_beams))
                 
             
@@ -231,10 +234,6 @@ class CaptionModel(nn.Module):
 
             a = b
             '''
-
-            if t >= 1:
-                print(vocab[0])
-                a = b
             
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates, new_beams
 
