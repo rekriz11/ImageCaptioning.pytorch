@@ -13,6 +13,7 @@ from .AttModel import *
 
 def setup(opt):
     print("Number of clusters: " + str(opt.num_clusters))
+    print(opt.caption_model)
     
     if opt.caption_model == 'show_tell':
         model = ShowTellModel(opt)
