@@ -167,7 +167,7 @@ class CaptionModel(nn.Module):
             new_candidates = []
             cluster_counts = [0 for i in range(num_clusters)]
             indices = []
-            for i, l in enumberate(cluster_labels):
+            for i, l in enumerate(cluster_labels):
                 if cluster_counts[l] < math.ceil(beam_size / num_clusters):
                     new_candidates.append(candidates[i])
                     indices.append(i)
