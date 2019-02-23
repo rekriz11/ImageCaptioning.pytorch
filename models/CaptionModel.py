@@ -109,7 +109,7 @@ class CaptionModel(nn.Module):
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
             cols = min(beam_size*2, ys.size(1))
-            rows = beam_size*2
+            rows = beam_size
             if t == 0:
                 rows = 1
             for c in range(cols): # for each column (word, essentially)
