@@ -142,7 +142,7 @@ class CaptionModel(nn.Module):
                 be = [embeds[v] for v in orig_beams[i]]
                 avg_be = []
                 for k in range(len(be[0])):
-                    avg_be.append(sum([be[j][k] for j in range(be)])/len(be))
+                    avg_be.append(sum([be[j][k] for j in range(len(be))])/len(be))
                 beam_embeds.append(avg_be)
             std_embeds = whited(beam_embeds)
 
