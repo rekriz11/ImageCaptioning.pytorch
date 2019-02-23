@@ -159,7 +159,7 @@ class CaptionModel(nn.Module):
                 cluster_labels.append(label)
 
             print("\nCLUSTERS")
-            for i in range(max(cluster_labels)):
+            for i in range(max(cluster_labels)+1):
                 cluster = [orig_beams[j] for j in range(len(cluster_labels)) if cluster_labels[j] == i]
                 print(cluster)
 
