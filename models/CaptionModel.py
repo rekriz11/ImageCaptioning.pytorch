@@ -20,17 +20,17 @@ from sklearn.metrics.pairwise import euclidean_distances
 import numpy as np
 import math
 
+## Calculates distance between 2 vectors
+def calc_distance(x, y):
+    nx = np.asarray(x).reshape(1, -1)
+    ny = np.asarray(y).reshape(1, -1)
+    dist = euclidean_distances(nx, ny)
+    return dist[0][0]
+
 
 class CaptionModel(nn.Module):
     def __init__(self):
         super(CaptionModel, self).__init__()
-
-    ## Calculates distance between 2 vectors
-    def calc_distance(x, y):
-        nx = np.asarray(x).reshape(1, -1)
-        ny = np.asarray(y).reshape(1, -1)
-        dist = euclidean_distances(nx, ny)
-        return dist[0][0]
 
     def beam_search(self, state, logprobs, *args, **kwargs):
         # args are the miscelleous inputs to the core in addition to embedded word and state
@@ -156,7 +156,7 @@ class CaptionModel(nn.Module):
                 for i, c in enumerate(centroids):
                     print(e)
                     print(c)
-                    dist = self.calc_distance(c, e)
+                    dist = calc_distance(c, e)
 
                     if dist < min_distance:
                         min_distance = dist
