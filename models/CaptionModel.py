@@ -130,6 +130,7 @@ class CaptionModel(nn.Module):
                 
             ## If doing Clustered Beam Search
             elif num_clusters > 1:
+                print(num_clusters)
                 ## Original beam
                 orig_beams = []
                 for i in range(beam_size*2):
