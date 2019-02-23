@@ -147,12 +147,14 @@ opt.embeds = dict()
 if opt.num_clusters > 1:
     ## Loads embeddings for all words in vocab
     embeds_file = opt.cluster_embeddings_file
-    #opt.embeds = load_embeddings(embeds_file, opt.vocab)
+    opt.embeds = load_embeddings(embeds_file, opt.vocab)
 
+    '''
     embeds = dict()
     for k,v in vocab.items():
         embeds[v] = [0.0 for i in range(300)]
     opt.embeds = embeds
+    '''
     
         
 # Setup the model
