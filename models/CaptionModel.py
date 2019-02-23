@@ -14,11 +14,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import *
 import misc.utils as utils
+from scipy.cluster.vq import kmeans, vq, whiten
+from sklearn.metrics.pairwise import euclidean_distances
+import numpy as np
+import math
 
 
 class CaptionModel(nn.Module):
     def __init__(self):
         super(CaptionModel, self).__init__()
+
+    ## Calculates distance between 2 vectors
+    def calc_distance(self, x, y):
+        nx = np.asarray(x).reshape(1, -1)
+        ny = np.asarray(y).reshape(1, -1)
+        dist = euclidean_distances(nx, ny)
+        return dist[0][0]
 
     def add_noise_to_hidden_state(self, state, t, opt):
         """If the noise opt is set, add noise to the hidden which decays with time."""
@@ -34,7 +45,8 @@ class CaptionModel(nn.Module):
         # args are the miscelleous inputs to the core in addition to embedded word and state
         # kwargs only accept opt
 
-        def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state):
+        def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
+                              num_clusters, embeds, vocab, prev_beams):
             # INPUTS:
             # logprobsf: probabilities augmented after diversity
             # beam_size: obvious
@@ -42,59 +54,166 @@ class CaptionModel(nn.Module):
             # beam_seq : tensor contanining the beams
             # beam_seq_logprobs: tensor contanining the beam logprobs
             # beam_logprobs_sum: tensor contanining joint logprobs
-            # OUPUTS:
+            # num_cluster: number of clusters
+            # embeds: glove embeddings for vocab (FOR CLUSTERED BEAM ONLY)
+            # vocab: set of vocab (FOR CLUSTERED BEAM ONLY)
+            # prev_beams: previous beam in list[str] form (FOR CLUSTERED BEAM ONLY)
+            # OUTPUTS:
             # beam_seq : tensor containing the word indices of the decoded captions
             # beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
             # beam_logprobs_sum : joint log-probability of each beam
+            # new_beams: new beam in list[str] form (FOR CLUSTERED BEAM ONLY)
+            
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
-            cols = min(beam_size, ys.size(1))
+            if num_clusters > 1:
+                cols = min(beam_size*2, ys.size(1))
+            else:
+                cols = min(beam_size, ys.size(1))
             rows = beam_size
             if t == 0:
                 rows = 1
-            for c in range(cols):  # for each column (word, essentially)
-                for q in range(rows):  # for each beam expansion
+            for c in range(cols): # for each column (word, essentially)
+                for q in range(rows): # for each beam expansion
                     # compute logprob of expanding beam q with word in (sorted) position c
                     local_logprob = ys[q, c]
                     candidate_logprob = beam_logprobs_sum[q] + local_logprob.cpu()
                     candidates.append(dict(c=ix[q, c], q=q,
                                            p=candidate_logprob,
                                            r=local_logprob))
-            candidates = sorted(candidates, key=lambda x: -x['p'])
+            candidates = sorted(candidates,  key=lambda x: -x['p'])
+            new_beams = []
+
+            ## If doing Clustered Beam Search
+            if num_clusters > 1:
+                ## Original beam (for debugging)
+                orig_beams = []
+                for i in range(beam_size*2):
+                    try:
+                        orig_beam = vocab[candidates[i]['c'].item()]
+                        if t >= 1:
+                            prev_beam = prev_beams[candidates[i]['q']]
+                            orig_beams.append(prev_beam + [orig_beam])
+                        else:
+                            orig_beams.append([orig_beam])
+                    except KeyError:
+                        orig_beams.append(prev_beams[candidates[i]['q']])
+                #print("\nORIGINAL BEAM: " + str(orig_beams))
+
+                ## Gets averaged beam embeddings
+                beam_embeds = []
+                for i in range(len(orig_beams)):
+                    be = [embeds[v] for v in orig_beams[i]]
+                    avg_be = []
+                    for k in range(len(be[0])):
+                        avg_be.append(sum([be[j][k] for j in range(len(be))])/len(be))
+                    beam_embeds.append(avg_be)
+                std_embeds = whiten(beam_embeds)
+
+                ## Cluster beam embeddings
+                ## Run K-means to cluster candidates into K clusters
+                centroids,_ = kmeans(std_embeds, num_clusters)
+                cluster_labels = []
+                for e in std_embeds:
+                    min_distance = 1e10
+                    label = -1
+                    for i, c in enumerate(centroids):
+                        dist = self.calc_distance(c, e)
+
+                        if dist < min_distance:
+                            min_distance = dist
+                            label = i
+                    cluster_labels.append(label)
+
+                '''
+                print("\nCLUSTERS")
+                for i in range(max(cluster_labels)+1):
+                    cluster = [orig_beams[j] for j in range(len(cluster_labels)) if cluster_labels[j] == i]
+                    print(cluster)
+                '''
+
+                ## Get top BEAM_SIZE/NUM_CLUSTERS candidates from each cluster
+                new_candidates = []
+                cluster_counts = [0 for i in range(num_clusters)]
+                indices = []
+                for i, l in enumerate(cluster_labels):
+                    if cluster_counts[l] < math.ceil(beam_size / num_clusters):
+                        new_candidates.append(candidates[i])
+                        indices.append(i)
+                        cluster_counts[l] += 1
+                    elif min(cluster_counts) == math.ceil(beam_size / num_clusters):
+                        break
+                    else:
+                        continue
+
+                ## If there aren't enough in each cluster, add candidates with highest scores
+                if len(new_candidates) < beam_size:
+                    while len(new_candidates) != beam_size:
+                        for i, l in enumerate(cluster_labels):
+                            if i not in indices:
+                                new_candidates.append(candidates[i])
+                                indices.append(i)
+                                break
+                #print(indices)
+                candidates = sorted(new_candidates,  key=lambda x: -x['p'])
+
+                ## New beam
+                for i in range(beam_size):
+                    try:
+                        new_beam = vocab[candidates[i]['c'].item()]
+                        if t >= 1:
+                            prev_beam = prev_beams[candidates[i]['q']]
+                            new_beams.append(prev_beam + [new_beam])
+                        else:
+                            new_beams.append([new_beam])
+                    except KeyError:
+                        new_beams.append(prev_beams[candidates[i]['q']])
+                #print("\nPOST-CLUSTERING BEAM: " + str(new_beams))
+
 
             new_state = [_.clone() for _ in state]
-            # beam_seq_prev, beam_seq_logprobs_prev
+            #beam_seq_prev, beam_seq_logprobs_prev
             if t >= 1:
-                # we''ll need these as reference when we fork beams around
+            #we''ll need these as reference when we fork beams around
                 beam_seq_prev = beam_seq[:t].clone()
                 beam_seq_logprobs_prev = beam_seq_logprobs[:t].clone()
             for vix in range(beam_size):
                 v = candidates[vix]
-                # fork beam index q into index vix
+                #fork beam index q into index vix
                 if t >= 1:
                     beam_seq[:t, vix] = beam_seq_prev[:, v['q']]
                     beam_seq_logprobs[:t, vix] = beam_seq_logprobs_prev[:, v['q']]
-                # rearrange recurrent states
+                #rearrange recurrent states
                 for state_ix in range(len(new_state)):
-                    #  copy over state in previous beam q to new beam at vix
-                    new_state[state_ix][:, vix] = state[state_ix][:, v['q']]  # dimension one is time step
-                # append new end terminal at the end of this beam
-                beam_seq[t, vix] = v['c']  # c'th word is the continuation
-                beam_seq_logprobs[t, vix] = v['r']  # the raw logprob here
-                beam_logprobs_sum[vix] = v['p']  # the new (sum) logprob along this beam
+                #  copy over state in previous beam q to new beam at vix
+                    new_state[state_ix][:, vix] = state[state_ix][:, v['q']] # dimension one is time step
+                #append new end terminal at the end of this beam
+                beam_seq[t, vix] = v['c'] # c'th word is the continuation
+                beam_seq_logprobs[t, vix] = v['r'] # the raw logprob here
+                beam_logprobs_sum[vix] = v['p'] # the new (sum) logprob along this beam
             state = new_state
-            return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates
 
+            return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates, new_beams
+        
         # start beam search
         opt = kwargs['opt']
         beam_size = opt.get('beam_size', 10)
+        num_clusters = opt.get('num_clusters', 1)
+
+        vocab = opt.get('vocab')
+        embeds = []
+        if num_clusters > 1:
+            embeds = opt.get('embeds')
 
         beam_seq = torch.LongTensor(self.seq_length, beam_size).zero_()
         beam_seq_logprobs = torch.FloatTensor(self.seq_length, beam_size).zero_()
         # running sum of logprobs for each beam
         beam_logprobs_sum = torch.zeros(beam_size)
         done_beams = []
+
+        ## Keeps track of previous beam
+        prev_beams = []
 
         for t in range(self.seq_length):
             """pem a beam merge. that is,
@@ -105,17 +224,12 @@ class CaptionModel(nn.Module):
             # suppress UNK tokens in the decoding
             logprobsf[:, logprobsf.size(1) - 1] = logprobsf[:, logprobsf.size(1) - 1] - 1000
 
-            beam_seq, \
-            beam_seq_logprobs, \
-            beam_logprobs_sum, \
-            state, \
-            candidates_divm = beam_step(logprobsf,
-                                        beam_size,
-                                        t,
-                                        beam_seq,
-                                        beam_seq_logprobs,
-                                        beam_logprobs_sum,
-                                        state)
+            beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
+                      candidates_divm, prev_beams = \
+                      beam_step(logprobsf, beam_size, \
+                                t, beam_seq, beam_seq_logprobs, \
+                                beam_logprobs_sum, state, \
+                                num_clusters, embeds, vocab, prev_beams)
             state = self.add_noise_to_hidden_state(state, t, opt)
 
             for vix in range(beam_size):
