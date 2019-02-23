@@ -176,6 +176,8 @@ class CaptionModel(nn.Module):
                     break
                 else:
                     continue
+            print(new_candidates)
+            print()
 
             ## If there aren't enough in each cluster, add candidates with highest scores
             if len(new_candidates) < beam_size:
@@ -186,6 +188,7 @@ class CaptionModel(nn.Module):
                             indices.append(i)
                             break
             print(new_candidates)
+            print()
             candidates = sorted(new_candidates,  key=lambda x: -x['p'])
             print(candidates)
 
