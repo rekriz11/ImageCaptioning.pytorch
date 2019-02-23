@@ -15,6 +15,11 @@ import torch.nn.functional as F
 from torch.autograd import *
 import misc.utils as utils
 
+from scipy.cluster.vq import kmeans, vq, whiten
+from sklearn.metrics.pairwise import euclidean_distances
+import numpy as np
+import math
+
 
 class CaptionModel(nn.Module):
     def __init__(self):
@@ -23,6 +28,13 @@ class CaptionModel(nn.Module):
     def beam_search(self, state, logprobs, *args, **kwargs):
         # args are the miscelleous inputs to the core in addition to embedded word and state
         # kwargs only accept opt
+
+        ## Calculates distance between 2 vectors
+        def calc_distance(x, y):
+            nx = np.asarray(x).reshape(1, -1)
+            ny = np.asarray(y).reshape(1, -1)
+            dist = euclidean_distances(nx, ny)
+            return dist[0][0]
 
         def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state):
             #INPUTS:
@@ -96,8 +108,8 @@ class CaptionModel(nn.Module):
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
-            cols = min(beam_size, ys.size(1))
-            rows = beam_size
+            cols = min(beam_size*2, ys.size(1))
+            rows = beam_size*2
             if t == 0:
                 rows = 1
             for c in range(cols): # for each column (word, essentially)
@@ -111,17 +123,76 @@ class CaptionModel(nn.Module):
             candidates = sorted(candidates,  key=lambda x: -x['p'])
             print(candidates)
 
-            ##### Original Beam #####
-            cur_beams = []
-            for i in range(beam_size):
-                cur_beam = vocab[candidates[i]['c'].item()]
+            ## Original beam
+            orig_beams = []
+            for i in range(beam_size*2):
+                orig_beam = vocab[candidates[i]['c'].item()]
                 if t >= 1:
                     prev_beam = prev_beams[candidates[i]['q']]
-                    cur_beams.append(prev_beam + [cur_beam])
+                    orig_beams.append(prev_beam + [orig_beam])
                 else:
-                    cur_beams.append([cur_beam])
-            print(cur_beams)
-            ##### Original Beam #####
+                    orig_beams.append([orig_beam])
+            print(orig_beams)
+
+            ## Gets averaged beam embeddings
+            beam_embeds = []
+            for i in range(len(orig_beams)):
+                be = [embeds[v] for v in orig_beams[i]]
+                avg_be = []
+                for k in range(len(be[0])):
+                    avg_be.append(sum([be[j][k] for j in range(be)])/len(be))
+                beam_embeds.append(avg_be)
+            std_embeds = whited(beam_embeds)
+
+            ## Cluster beam embeddings
+            ## Run K-means to cluster candidates into K clusters
+            centroids,_ = kmeans(std_embeds, self.num_clusters)
+            cluster_labels = []
+            for e in std_embeds:
+                min_distance = 1e10
+                label = -1
+                for i, c in enumerate(centroids):
+                    dist = self.calc_distance(c, e)
+
+                    if dist < min_distance:
+                        min_distance = dist
+                        label = i
+                cluster_labels.append(label)
+
+            ## Get top BEAM_SIZE/NUM_CLUSTERS candidates from each cluster
+            new_candidates = []
+            cluster_counts = [0 for i in range(num_clusters)]
+            indices = []
+            for i, l in enumberate(cluster_labels):
+                if cluster_counts[l] < math.ceil(beam_size / num_clusters):
+                    new_candidates.append(candidates[i])
+                    indices.append(i)
+                    cluster_counts[l] += 1
+                elif min(cluster_counts) == math.ceil(beam_size / num_clusters):
+                    break
+                else:
+                    continue
+
+            ## If there aren't enough in each cluster, add candidates with highest scores
+            if len(new_candidates) < beam_size:
+                while len(new_candidates) != beam_size:
+                    for i, l in enumerate(cluster_labels):
+                        if i not in indices:
+                            new_candidates.append(candidates[i])
+                            break
+            
+            candidates = new_candidates
+
+            ## New beam
+            new_beams = []
+            for i in range(beam_size*2):
+                new_beam = vocab[candidates[i]['c'].item()]
+                if t >= 1:
+                    prev_beam = prev_beams[candidates[i]['q']]
+                    new_beam.append(prev_beam + [new_beam])
+                else:
+                    new_beams.append([new_beam])
+            print(new_beams)
                 
             
             new_state = [_.clone() for _ in state]
