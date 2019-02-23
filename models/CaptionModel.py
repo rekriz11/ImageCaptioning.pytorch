@@ -47,21 +47,23 @@ class CaptionModel(nn.Module):
 
         def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
                               num_clusters, embeds, vocab, prev_beams):
-            #INPUTS:
-            #logprobsf: probabilities augmented after diversity
-            #beam_size: obvious
-            #t        : time instant
-            #beam_seq : tensor contanining the beams
-            #beam_seq_logprobs: tensor contanining the beam logprobs
-            #beam_logprobs_sum: tensor contanining joint logprobs
-            #num_cluster: number of clusters
-            #embeds: glove embeddings for vocab
-            #vocab: set of vocab
-            #prev_beams: previous beams in list[str] form
+            # INPUTS:
+            # logprobsf: probabilities augmented after diversity
+            # beam_size: obvious
+            # t        : time instant
+            # beam_seq : tensor contanining the beams
+            # beam_seq_logprobs: tensor contanining the beam logprobs
+            # beam_logprobs_sum: tensor contanining joint logprobs
+            # num_cluster: number of clusters
+            # embeds: glove embeddings for vocab (FOR CLUSTERED BEAM ONLY)
+            # vocab: set of vocab (FOR CLUSTERED BEAM ONLY)
+            # prev_beams: previous beam in list[str] form (FOR CLUSTERED BEAM ONLY)
             #OUPUTS:
-            #beam_seq : tensor containing the word indices of the decoded captions
-            #beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
-            #beam_logprobs_sum : joint log-probability of each beam
+            # beam_seq : tensor containing the word indices of the decoded captions
+            # beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
+            # beam_logprobs_sum : joint log-probability of each beam
+            # new_beams: new beam in list[str] form (FOR CLUSTERED BEAM ONLY)
+            
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
