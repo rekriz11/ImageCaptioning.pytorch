@@ -86,11 +86,13 @@ class CaptionModel(nn.Module):
             candidates = sorted(candidates,  key=lambda x: -x['p'])
             new_beams = []
 
+            '''
             ## New beam (for debugging k_per_cand)
             if t == 0 and k_per_cand != 0:
                 for i in range(beam_size):
                     new_beams.append([vocab[candidates[i]['c'].item()]])
                 print("\nFIRST BEAM: " + str(new_beams))
+            '''
 
             elif t >= 1 and k_per_cand != 0:
                 '''
