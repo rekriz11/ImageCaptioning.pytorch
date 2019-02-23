@@ -45,18 +45,14 @@ class CaptionModel(nn.Module):
         # args are the miscelleous inputs to the core in addition to embedded word and state
         # kwargs only accept opt
 
-        def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
-                              num_clusters, embeds, vocab, prev_beams):
+        def beam_step(logprobsf, opt, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, prev_beams):
             # INPUTS:
             # logprobsf: probabilities augmented after diversity
-            # beam_size: obvious
+            # opt: all arguments
             # t        : time instant
             # beam_seq : tensor contanining the beams
             # beam_seq_logprobs: tensor contanining the beam logprobs
             # beam_logprobs_sum: tensor contanining joint logprobs
-            # num_cluster: number of clusters
-            # embeds: glove embeddings for vocab (FOR CLUSTERED BEAM ONLY)
-            # vocab: set of vocab (FOR CLUSTERED BEAM ONLY)
             # prev_beams: previous beam in list[str] form (FOR CLUSTERED BEAM ONLY)
             # OUTPUTS:
             # beam_seq : tensor containing the word indices of the decoded captions
@@ -67,11 +63,11 @@ class CaptionModel(nn.Module):
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
-            if num_clusters > 1:
-                cols = min(beam_size*2, ys.size(1))
+            if opt.num_clusters > 1:
+                cols = min(opt.beam_size*2, ys.size(1))
             else:
-                cols = min(beam_size, ys.size(1))
-            rows = beam_size
+                cols = min(opt.beam_size, ys.size(1))
+            rows = opt.beam_size
             if t == 0:
                 rows = 1
             for c in range(cols): # for each column (word, essentially)
@@ -85,13 +81,55 @@ class CaptionModel(nn.Module):
             candidates = sorted(candidates,  key=lambda x: -x['p'])
             new_beams = []
 
-            ## If doing Clustered Beam Search
-            if num_clusters > 1:
+            if t >= 1 and opt.k_per_cand != 0:
                 ## Original beam (for debugging)
                 orig_beams = []
-                for i in range(beam_size*2):
+                for i in range(len(candidates)):
                     try:
-                        orig_beam = vocab[candidates[i]['c'].item()]
+                        orig_beam = opt.vocab[candidates[i]['c'].item()]
+                        if t >= 1:
+                            prev_beam = prev_beams[candidates[i]['q']]
+                            orig_beams.append(prev_beam + [orig_beam])
+                        else:
+                            orig_beams.append([orig_beam])
+                    except KeyError:
+                        orig_beams.append(prev_beams[candidates[i]['q']])
+                print("\nORIGINAL BEAM: " + str(orig_beams))
+
+                new_candidates = []
+                indices = []
+                num_per_cand = [0 for i in range(len(opt.beam_size))]
+                i = 0
+                while len(new_candidates) < opt.beam_size:
+                    prev_beam_id = candidates[i]['q']
+                    if num_per_cand[prev_beam_id] < opt.k_per_cand:
+                        new_candidates.append(candidates[i])
+                        num_per_cand[prev_beam_id] += 1
+                        indices.append(i)
+                    i += 1
+                candidates = new_candidates
+                
+                ## New beam (for debugging
+                for i in range(opt.beam_size):
+                    try:
+                        new_beam = opt.vocab[candidates[i]['c'].item()]
+                        if t >= 1:
+                            prev_beam = prev_beams[candidates[i]['q']]
+                            new_beams.append(prev_beam + [new_beam])
+                        else:
+                            new_beams.append([new_beam])
+                    except KeyError:
+                        new_beams.append(prev_beams[candidates[i]['q']])
+                print("\nPOST-K_PER_CAND BEAM: " + str(new_beams))
+                print(indices)
+                
+            ## If doing Clustered Beam Search
+            elif opt.num_clusters > 1:
+                ## Original beam
+                orig_beams = []
+                for i in range(opt.beam_size*2):
+                    try:
+                        orig_beam = opt.vocab[candidates[i]['c'].item()]
                         if t >= 1:
                             prev_beam = prev_beams[candidates[i]['q']]
                             orig_beams.append(prev_beam + [orig_beam])
@@ -104,7 +142,7 @@ class CaptionModel(nn.Module):
                 ## Gets averaged beam embeddings
                 beam_embeds = []
                 for i in range(len(orig_beams)):
-                    be = [embeds[v] for v in orig_beams[i]]
+                    be = [opt.embeds[v] for v in orig_beams[i]]
                     avg_be = []
                     for k in range(len(be[0])):
                         avg_be.append(sum([be[j][k] for j in range(len(be))])/len(be))
@@ -113,7 +151,7 @@ class CaptionModel(nn.Module):
 
                 ## Cluster beam embeddings
                 ## Run K-means to cluster candidates into K clusters
-                centroids,_ = kmeans(std_embeds, num_clusters)
+                centroids,_ = kmeans(std_embeds, opt.num_clusters)
                 cluster_labels = []
                 for e in std_embeds:
                     min_distance = 1e10
@@ -135,21 +173,21 @@ class CaptionModel(nn.Module):
 
                 ## Get top BEAM_SIZE/NUM_CLUSTERS candidates from each cluster
                 new_candidates = []
-                cluster_counts = [0 for i in range(num_clusters)]
+                cluster_counts = [0 for i in range(opt.num_clusters)]
                 indices = []
                 for i, l in enumerate(cluster_labels):
-                    if cluster_counts[l] < math.ceil(beam_size / num_clusters):
+                    if cluster_counts[l] < math.ceil(opt.beam_size / opt.num_clusters):
                         new_candidates.append(candidates[i])
                         indices.append(i)
                         cluster_counts[l] += 1
-                    elif min(cluster_counts) == math.ceil(beam_size / num_clusters):
+                    elif min(cluster_counts) == math.ceil(opt.beam_size / opt.num_clusters):
                         break
                     else:
                         continue
 
                 ## If there aren't enough in each cluster, add candidates with highest scores
-                if len(new_candidates) < beam_size:
-                    while len(new_candidates) != beam_size:
+                if len(new_candidates) < opt.beam_size:
+                    while len(new_candidates) != opt.beam_size:
                         for i, l in enumerate(cluster_labels):
                             if i not in indices:
                                 new_candidates.append(candidates[i])
@@ -159,9 +197,9 @@ class CaptionModel(nn.Module):
                 candidates = sorted(new_candidates,  key=lambda x: -x['p'])
 
                 ## New beam
-                for i in range(beam_size):
+                for i in range(opt.beam_size):
                     try:
-                        new_beam = vocab[candidates[i]['c'].item()]
+                        new_beam = opt.vocab[candidates[i]['c'].item()]
                         if t >= 1:
                             prev_beam = prev_beams[candidates[i]['q']]
                             new_beams.append(prev_beam + [new_beam])
@@ -178,7 +216,7 @@ class CaptionModel(nn.Module):
             #we''ll need these as reference when we fork beams around
                 beam_seq_prev = beam_seq[:t].clone()
                 beam_seq_logprobs_prev = beam_seq_logprobs[:t].clone()
-            for vix in range(beam_size):
+            for vix in range(opt.beam_size):
                 v = candidates[vix]
                 #fork beam index q into index vix
                 if t >= 1:
@@ -199,12 +237,6 @@ class CaptionModel(nn.Module):
         # start beam search
         opt = kwargs['opt']
         beam_size = opt.get('beam_size', 10)
-        num_clusters = opt.get('num_clusters', 1)
-
-        vocab = opt.get('vocab')
-        embeds = []
-        if num_clusters > 1:
-            embeds = opt.get('embeds')
 
         beam_seq = torch.LongTensor(self.seq_length, beam_size).zero_()
         beam_seq_logprobs = torch.FloatTensor(self.seq_length, beam_size).zero_()
@@ -226,10 +258,9 @@ class CaptionModel(nn.Module):
 
             beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
                       candidates_divm, prev_beams = \
-                      beam_step(logprobsf, beam_size, \
+                      beam_step(logprobsf, opt, \
                                 t, beam_seq, beam_seq_logprobs, \
-                                beam_logprobs_sum, state, \
-                                num_clusters, embeds, vocab, prev_beams)
+                                beam_logprobs_sum, state, prev_beams)
             state = self.add_noise_to_hidden_state(state, t, opt)
 
             for vix in range(beam_size):
