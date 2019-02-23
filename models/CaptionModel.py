@@ -61,7 +61,7 @@ class CaptionModel(nn.Module):
             # new_beams: new beam in list[str] form (FOR CLUSTERED BEAM ONLY)
 
             beam_size = opt.get('beam_size', 10)
-            num_clusters = opt.get('beam_size', 1)
+            num_clusters = opt.get('num_clusters', 1)
             embeds = opt.get('embeds', [])
             vocab = opt.get('vocab', dict())
             k_per_cand = opt.get('k_per_cand', 0)
@@ -130,7 +130,6 @@ class CaptionModel(nn.Module):
                 
             ## If doing Clustered Beam Search
             elif num_clusters > 1:
-                print(num_clusters)
                 ## Original beam
                 orig_beams = []
                 for i in range(beam_size*2):
