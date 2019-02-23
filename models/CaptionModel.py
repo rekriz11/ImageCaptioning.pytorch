@@ -134,7 +134,7 @@ class CaptionModel(nn.Module):
                         orig_beams.append([orig_beam])
                 except KeyError:
                     orig_beams.append(prev_beams[candidates[i]['q']])
-            print("\nORIGINAL BEAM: " + str(orig_beams))
+            #print("\nORIGINAL BEAM: " + str(orig_beams))
 
             ## Gets averaged beam embeddings
             beam_embeds = []
@@ -161,10 +161,12 @@ class CaptionModel(nn.Module):
                         label = i
                 cluster_labels.append(label)
 
+            '''
             print("\nCLUSTERS")
             for i in range(max(cluster_labels)+1):
                 cluster = [orig_beams[j] for j in range(len(cluster_labels)) if cluster_labels[j] == i]
                 print(cluster)
+            '''
 
             ## Get top BEAM_SIZE/NUM_CLUSTERS candidates from each cluster
             new_candidates = []
@@ -203,7 +205,7 @@ class CaptionModel(nn.Module):
                         new_beams.append([new_beam])
                 except KeyError:
                     new_beams.append(prev_beams[candidates[i]['q']])
-            print("\nPOST-CLUSTERING BEAM: " + str(new_beams))
+            #print("\nPOST-CLUSTERING BEAM: " + str(new_beams))
                 
             
             new_state = [_.clone() for _ in state]
