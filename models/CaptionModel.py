@@ -72,7 +72,7 @@ class CaptionModel(nn.Module):
                 cols = min(beam_size*2, ys.size(1))
             else:
                 cols = min(beam_size, ys.size(1))
-            rows = opt.beam_size
+            rows = beam_size
             if t == 0:
                 rows = 1
             for c in range(cols): # for each column (word, essentially)
@@ -103,7 +103,7 @@ class CaptionModel(nn.Module):
 
                 new_candidates = []
                 indices = []
-                num_per_cand = [0 for i in range(len(opt.beam_size))]
+                num_per_cand = [0 for i in range(len(beam_size))]
                 i = 0
                 while len(new_candidates) < beam_size:
                     prev_beam_id = candidates[i]['q']
@@ -129,7 +129,7 @@ class CaptionModel(nn.Module):
                 print(indices)
                 
             ## If doing Clustered Beam Search
-            elif opt.num_clusters > 1:
+            elif num_clusters > 1:
                 ## Original beam
                 orig_beams = []
                 for i in range(beam_size*2):
