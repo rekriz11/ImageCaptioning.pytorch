@@ -18,6 +18,8 @@ import eval_utils
 import argparse
 import misc.utils as utils
 import torch
+import numpy
+import random
 
 ## Loads in embeddings for all words in vocab
 def load_embeddings(embeddings_file, vocab):
@@ -54,6 +56,9 @@ def load_embeddings(embeddings_file, vocab):
     print("Not found: " + str(not_found))
 
     return vocab_embeds
+
+numpy.random.seed(37)
+random.seed(37)
 
 # Input arguments and options
 parser = argparse.ArgumentParser()
