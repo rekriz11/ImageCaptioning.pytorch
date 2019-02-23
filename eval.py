@@ -45,6 +45,9 @@ def load_embeddings(embeddings_file, vocab):
                 not_found += 1
                 vocab_embeds[v] = np.array([0.0 for i in range(300)])
     print("DONE!")
+    print("Found: " + str(found))
+    print("Found lower: " + str(only_lower))
+    print("Not found: " + str(not_found))
 
     return vocab_embeds
 
