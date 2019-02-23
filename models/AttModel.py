@@ -408,6 +408,8 @@ class AdaAttCore(nn.Module):
 class TopDownCore(nn.Module):
     def __init__(self, opt, use_maxout=False):
         super(TopDownCore, self).__init__()
+
+        print("Number of clusters: " + str(opt.num_clusters))
         self.drop_prob_lm = opt.drop_prob_lm
 
         self.att_lstm = nn.LSTMCell(opt.input_encoding_size + opt.rnn_size * 2, opt.rnn_size)  # we, fc, h^2_t-1
