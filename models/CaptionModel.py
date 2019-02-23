@@ -233,6 +233,7 @@ class CaptionModel(nn.Module):
             '''
 
             if t >= 1:
+                print(vocab[0])
                 a = b
             
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates, new_beams
