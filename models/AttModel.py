@@ -114,6 +114,8 @@ class AttModel(CaptionModel):
     def sample_beam(self, fc_feats, att_feats, opt={}):
         beam_size = opt.get('beam_size', 10)
         print('Beam size in sample_beam {}'.format(beam_size))
+        print("NUMBER OF CLUSTERS:")
+        print(opt.num_clusters)
         batch_size = fc_feats.size(0)
 
         # embed fc and att feats

@@ -123,9 +123,6 @@ parser.add_argument('--k_per_cand', type=int, default=0,
 
 opt = parser.parse_args()
 
-print("NUMBER OF CLUSTERS:")
-print(opt.num_clusters)
-
 # Load infos
 with open(opt.infos_path, 'rb') as f:
     infos = cPickle.load(f)
