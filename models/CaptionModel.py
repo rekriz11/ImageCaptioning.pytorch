@@ -193,10 +193,8 @@ class CaptionModel(nn.Module):
             for i in range(beam_size):
                 new_beam = vocab[candidates[i]['c'].item()]
                 if t >= 1:
-                    print(candidates[i]['q'])
                     prev_beam = prev_beams[candidates[i]['q']]
-                    print(prev_beam)
-                    new_beam.append(prev_beam + [new_beam])
+                    new_beams.append(prev_beam + [new_beam])
                 else:
                     new_beams.append([new_beam])
             print("\nPOST-CLUSTERING BEAM: " + str(new_beams))
