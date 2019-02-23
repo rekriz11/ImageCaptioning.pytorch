@@ -76,8 +76,6 @@ def eval_split(model, crit, loader, eval_kwargs={}):
     number_of_samples = eval_kwargs.get('number_of_samples', 1)
     output_json_file_path = eval_kwargs.get('output_json_file_path', 'output.json')
 
-    print("NUMBER OF CLUSTERS: " + str(eval_kwargs.get('num_clusters')))
-
     # Make sure in the evaluation mode
     model.eval()
 

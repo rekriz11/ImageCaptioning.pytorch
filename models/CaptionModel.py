@@ -60,17 +60,18 @@ class CaptionModel(nn.Module):
             # beam_logprobs_sum : joint log-probability of each beam
             # new_beams: new beam in list[str] form (FOR CLUSTERED BEAM ONLY)
 
-            for k,v in opt.items():
-                if k != 'vocab':
-                    print(str(k) + "\t" + str(v))
-            
+            beam_size = opt.get('beam_size', 10)
+            num_clusters = opt.get('beam_size', 1)
+            embeds = opt.get('embeds', [])
+            vocab = opt.get('vocab', dict())
+            k_per_cand = opt.get('k_per_cand', 0)
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
             if opt.num_clusters > 1:
-                cols = min(opt.beam_size*2, ys.size(1))
+                cols = min(beam_size*2, ys.size(1))
             else:
-                cols = min(opt.beam_size, ys.size(1))
+                cols = min(beam_size, ys.size(1))
             rows = opt.beam_size
             if t == 0:
                 rows = 1
@@ -85,12 +86,12 @@ class CaptionModel(nn.Module):
             candidates = sorted(candidates,  key=lambda x: -x['p'])
             new_beams = []
 
-            if t >= 1 and opt.k_per_cand != 0:
+            if t >= 1 and k_per_cand != 0:
                 ## Original beam (for debugging)
                 orig_beams = []
                 for i in range(len(candidates)):
                     try:
-                        orig_beam = opt.vocab[candidates[i]['c'].item()]
+                        orig_beam = vocab[candidates[i]['c'].item()]
                         if t >= 1:
                             prev_beam = prev_beams[candidates[i]['q']]
                             orig_beams.append(prev_beam + [orig_beam])
@@ -104,9 +105,9 @@ class CaptionModel(nn.Module):
                 indices = []
                 num_per_cand = [0 for i in range(len(opt.beam_size))]
                 i = 0
-                while len(new_candidates) < opt.beam_size:
+                while len(new_candidates) < beam_size:
                     prev_beam_id = candidates[i]['q']
-                    if num_per_cand[prev_beam_id] < opt.k_per_cand:
+                    if num_per_cand[prev_beam_id] < k_per_cand:
                         new_candidates.append(candidates[i])
                         num_per_cand[prev_beam_id] += 1
                         indices.append(i)
@@ -114,9 +115,9 @@ class CaptionModel(nn.Module):
                 candidates = new_candidates
                 
                 ## New beam (for debugging
-                for i in range(opt.beam_size):
+                for i in range(beam_size):
                     try:
-                        new_beam = opt.vocab[candidates[i]['c'].item()]
+                        new_beam = vocab[candidates[i]['c'].item()]
                         if t >= 1:
                             prev_beam = prev_beams[candidates[i]['q']]
                             new_beams.append(prev_beam + [new_beam])
@@ -131,9 +132,9 @@ class CaptionModel(nn.Module):
             elif opt.num_clusters > 1:
                 ## Original beam
                 orig_beams = []
-                for i in range(opt.beam_size*2):
+                for i in range(beam_size*2):
                     try:
-                        orig_beam = opt.vocab[candidates[i]['c'].item()]
+                        orig_beam = vocab[candidates[i]['c'].item()]
                         if t >= 1:
                             prev_beam = prev_beams[candidates[i]['q']]
                             orig_beams.append(prev_beam + [orig_beam])
@@ -146,7 +147,7 @@ class CaptionModel(nn.Module):
                 ## Gets averaged beam embeddings
                 beam_embeds = []
                 for i in range(len(orig_beams)):
-                    be = [opt.embeds[v] for v in orig_beams[i]]
+                    be = [embeds[v] for v in orig_beams[i]]
                     avg_be = []
                     for k in range(len(be[0])):
                         avg_be.append(sum([be[j][k] for j in range(len(be))])/len(be))
@@ -155,7 +156,7 @@ class CaptionModel(nn.Module):
 
                 ## Cluster beam embeddings
                 ## Run K-means to cluster candidates into K clusters
-                centroids,_ = kmeans(std_embeds, opt.num_clusters)
+                centroids,_ = kmeans(std_embeds, num_clusters)
                 cluster_labels = []
                 for e in std_embeds:
                     min_distance = 1e10
@@ -177,21 +178,21 @@ class CaptionModel(nn.Module):
 
                 ## Get top BEAM_SIZE/NUM_CLUSTERS candidates from each cluster
                 new_candidates = []
-                cluster_counts = [0 for i in range(opt.num_clusters)]
+                cluster_counts = [0 for i in range(num_clusters)]
                 indices = []
                 for i, l in enumerate(cluster_labels):
-                    if cluster_counts[l] < math.ceil(opt.beam_size / opt.num_clusters):
+                    if cluster_counts[l] < math.ceil(beam_size / num_clusters):
                         new_candidates.append(candidates[i])
                         indices.append(i)
                         cluster_counts[l] += 1
-                    elif min(cluster_counts) == math.ceil(opt.beam_size / opt.num_clusters):
+                    elif min(cluster_counts) == math.ceil(beam_size / num_clusters):
                         break
                     else:
                         continue
 
                 ## If there aren't enough in each cluster, add candidates with highest scores
-                if len(new_candidates) < opt.beam_size:
-                    while len(new_candidates) != opt.beam_size:
+                if len(new_candidates) < beam_size:
+                    while len(new_candidates) != beam_size:
                         for i, l in enumerate(cluster_labels):
                             if i not in indices:
                                 new_candidates.append(candidates[i])
@@ -201,9 +202,9 @@ class CaptionModel(nn.Module):
                 candidates = sorted(new_candidates,  key=lambda x: -x['p'])
 
                 ## New beam
-                for i in range(opt.beam_size):
+                for i in range(beam_size):
                     try:
-                        new_beam = opt.vocab[candidates[i]['c'].item()]
+                        new_beam = vocab[candidates[i]['c'].item()]
                         if t >= 1:
                             prev_beam = prev_beams[candidates[i]['q']]
                             new_beams.append(prev_beam + [new_beam])
@@ -220,7 +221,7 @@ class CaptionModel(nn.Module):
             #we''ll need these as reference when we fork beams around
                 beam_seq_prev = beam_seq[:t].clone()
                 beam_seq_logprobs_prev = beam_seq_logprobs[:t].clone()
-            for vix in range(opt.beam_size):
+            for vix in range(beam_size):
                 v = candidates[vix]
                 #fork beam index q into index vix
                 if t >= 1:

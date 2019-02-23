@@ -114,8 +114,6 @@ class AttModel(CaptionModel):
     def sample_beam(self, fc_feats, att_feats, opt={}):
         beam_size = opt.get('beam_size', 10)
         print('Beam size in sample_beam {}'.format(beam_size))
-        print("NUMBER OF CLUSTERS:")
-        print(opt['num_clusters'])
         batch_size = fc_feats.size(0)
 
         # embed fc and att feats
@@ -170,8 +168,6 @@ class AttModel(CaptionModel):
         return seq.transpose(0, 1), seqLogprobs.transpose(0, 1), all_candidate_sentences, all_candidate_scores
 
     def sample(self, fc_feats, att_feats, opt={}):
-        print(len(list(opt.keys())))
-        print("NMCLSTR: " + str(opt['num_clusters']))
         sample_max = opt.get('sample_max', 1)
         beam_size = opt.get('beam_size', 1)
         temperature = opt.get('temperature', 1.0)
