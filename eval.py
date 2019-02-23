@@ -175,7 +175,6 @@ model = models.setup(opt)
 model.load_state_dict(torch.load(opt.model))
 model.cuda()
 model.eval()
-print("HI")
 crit = utils.LanguageModelCriterion()
 
 # Create the Data Loader instance

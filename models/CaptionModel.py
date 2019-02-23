@@ -68,7 +68,7 @@ class CaptionModel(nn.Module):
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
-            if opt.num_clusters > 1:
+            if num_clusters > 1:
                 cols = min(beam_size*2, ys.size(1))
             else:
                 cols = min(beam_size, ys.size(1))
