@@ -114,7 +114,7 @@ class CaptionModel(nn.Module):
                     min_distance = 1e10
                     label = -1
                     for i, c in enumerate(centroids):
-                        dist = calc_distance(c, e)
+                        dist = self.calc_distance(c, e)
 
                         if dist < min_distance:
                             min_distance = dist
@@ -221,10 +221,10 @@ class CaptionModel(nn.Module):
 
             beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
                       candidates_divm, prev_beams = \
-                      cluster_beam_step(logprobsf, beam_size, \
-                                        t, beam_seq, beam_seq_logprobs, \
-                                        beam_logprobs_sum, state, \
-                                        num_clusters, embeds, vocab, prev_beams)
+                      beam_step(logprobsf, beam_size, \
+                                t, beam_seq, beam_seq_logprobs, \
+                                beam_logprobs_sum, state, \
+                                num_clusters, embeds, vocab, prev_beams)
             state = self.add_noise_to_hidden_state(state, t, opt)
 
             for vix in range(beam_size):
