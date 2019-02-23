@@ -34,6 +34,8 @@ def load_embeddings(embeddings_file, vocab):
     vocab_embeds = {}
     found, only_lower, not_found = 0, 0, 0
     for k,v in vocab.items():
+        print(k)
+        print(v)
         try:
             vocab_embeds[v] = embeds[v]
             found += 1
