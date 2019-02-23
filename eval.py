@@ -150,7 +150,7 @@ if opt.num_clusters > 1:
     #opt.embeds = load_embeddings(embeds_file, opt.vocab)
 
     embeds = dict()
-    for v in opt.vocab:
+    for k,v in vocab.items():
         embeds[v] = [0.0 for i in range(300)]
     opt.embeds = embeds
     
