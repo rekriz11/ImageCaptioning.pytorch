@@ -33,7 +33,7 @@ def load_embeddings(embeddings_file, vocab):
     ## have glove embeddings
     vocab_embeds = {}
     found, only_lower, not_found = 0, 0, 0
-    for k,v in enumerate(vocab):
+    for k,v in vocab.items():
         try:
             vocab_embeds[v] = embeds[v]
             found += 1
