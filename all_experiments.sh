@@ -20,7 +20,7 @@ python eval.py --model "$MODEL" \
               --num_images $NUM_IMAGES \
               --sample_max 1 \
               --beam_size $BATCH_SIZE \
-              --hidden_state_noise 0.3
+              --hidden_state_noise 0.3 \
               --output_json_file_path "$OUTPUT_DIRECTORY/bs_npad0.3.json"
 
 echo "Beam Search, number of candidates=${BATCH_SIZE}"
@@ -64,3 +64,16 @@ python eval.py --model "$MODEL" \
               --number_of_samples $BATCH_SIZE \
               --temperature 0.5 \
               --output_json_file_path "$OUTPUT_DIRECTORY/rs_t=1.3.json"
+
+
+echo "Random sampling, top_c=10, temperature=0.5"
+python eval.py --model "$MODEL" \
+              --infos_path "$MODEL_INFOS_PATH" \
+              --image_folder "$IMAGE_DIRECTORY" \
+              --num_images $NUM_IMAGES \
+              --sample_max 0 \
+              --beam_size 1 \
+              --number_of_samples $BATCH_SIZE \
+              --temperature 0.5 \
+              --top_c 10 \
+              --output_json_file_path "$OUTPUT_DIRECTORY/rs_t=0.5,top_c=10.json"

@@ -171,6 +171,8 @@ class AttModel(CaptionModel):
         sample_max = opt.get('sample_max', 1)
         beam_size = opt.get('beam_size', 1)
         temperature = opt.get('temperature', 1.0)
+        top_c = opt.get('top_c', 0)
+
         if beam_size > 1:
             print('Performing beam search for beam size: {}'.format(beam_size))
             return self.sample_beam(fc_feats, att_feats, opt)
@@ -197,6 +199,15 @@ class AttModel(CaptionModel):
                 sampleLogprobs, it = torch.max(logprobs.data, 1)
                 it = it.view(-1).long()
             else:
+                if top_c > 0:
+                    # print(logprobs)
+                    top_values, top_indices = torch.topk(logprobs, top_c, dim=1)
+                    kth_best = top_values[:, -1].view([-1, 1])
+                    kth_best = kth_best.repeat([1, logprobs.shape[1]]).float()
+
+                    keep = torch.ge(logprobs, kth_best).float()
+                    logprobs = (keep * logprobs) + ((1 - keep) * -10000)
+
                 if temperature == 1.0:
                     prob_prev = torch.exp(logprobs.data).cpu()  # fetch prev distribution: shape Nx(M+1)
                 else:
@@ -204,7 +215,7 @@ class AttModel(CaptionModel):
                     prob_prev = torch.exp(torch.div(logprobs.data, temperature)).cpu()
                 it = torch.multinomial(prob_prev, 1).cuda()
                 sampleLogprobs = logprobs.gather(1, Variable(it,
-                                                             requires_grad=False))  # gather the logprobs at sampled positions
+                                                             requires_grad=False))   # gather the logprobs at sampled positions
                 it = it.view(-1).long()  # and flatten indices for downstream processing
 
             xt = self.embed(Variable(it, requires_grad=False))

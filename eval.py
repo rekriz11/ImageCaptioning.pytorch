@@ -74,7 +74,8 @@ parser.add_argument('--id', type=str, default='',
                     help='an id identifying this run/job. used only if language_eval = 1 for appending to intermediate files')
 
 parser.add_argument('--output_json_file_path', type=str, default='output.json')
-parser.add_argument('--number_of_samples', type=int, default=4, help='Number of samples when sample_max is 0')
+parser.add_argument('--number_of_samples', type=int, default=4, help='Number of samples when sample_max is 0 (for random sampling)')
+parser.add_argument('--top_c', type=int, default=-1, help='Top c random sampling (when sample max is 0)')
 
 opt = parser.parse_args()
 
@@ -93,7 +94,7 @@ if opt.batch_size == 0:
     opt.batch_size = infos['opt'].batch_size
 if len(opt.id) == 0:
     opt.id = infos['opt'].id
-assert not(opt.beam_size == 1 and hidden_state_noise > 0.0)
+assert not(opt.beam_size == 1 and opt.hidden_state_noise > 0.0)
  
 ignore = ["id", "batch_size", "beam_size", "start_from", "language_eval"]
 for k in vars(infos['opt']).keys():

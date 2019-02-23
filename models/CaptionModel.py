@@ -24,29 +24,28 @@ class CaptionModel(nn.Module):
         """If the noise opt is set, add noise to the hidden which decays with time."""
         noise_amount = opt.get('hidden_state_noise', 0.0)
         if noise_amount > 0.0:
-            sigma = noise_amount / float(t+1)
-            random_noise = torch.cuda.FloatTensor(state[0].size()).normal_(0, sigma) 
+            sigma = noise_amount / float(t + 1)
+            random_noise = torch.cuda.FloatTensor(state[0].size()).normal_(0, sigma)
             # random_noise = torch.FloatTensor(state.size()).normal_(0, sigma) # Uncomment if running on cpu 
-        state = [state[0] + random_noise, state[1]]
+            state = [state[0] + random_noise, state[1]]
         return state
-
 
     def beam_search(self, state, logprobs, *args, **kwargs):
         # args are the miscelleous inputs to the core in addition to embedded word and state
         # kwargs only accept opt
 
         def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state):
-            #INPUTS:
-            #logprobsf: probabilities augmented after diversity
-            #beam_size: obvious
-            #t        : time instant
-            #beam_seq : tensor contanining the beams
-            #beam_seq_logprobs: tensor contanining the beam logprobs
-            #beam_logprobs_sum: tensor contanining joint logprobs
-            #OUPUTS:
-            #beam_seq : tensor containing the word indices of the decoded captions
-            #beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
-            #beam_logprobs_sum : joint log-probability of each beam
+            # INPUTS:
+            # logprobsf: probabilities augmented after diversity
+            # beam_size: obvious
+            # t        : time instant
+            # beam_seq : tensor contanining the beams
+            # beam_seq_logprobs: tensor contanining the beam logprobs
+            # beam_logprobs_sum: tensor contanining joint logprobs
+            # OUPUTS:
+            # beam_seq : tensor containing the word indices of the decoded captions
+            # beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
+            # beam_logprobs_sum : joint log-probability of each beam
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
@@ -54,36 +53,36 @@ class CaptionModel(nn.Module):
             rows = beam_size
             if t == 0:
                 rows = 1
-            for c in range(cols): # for each column (word, essentially)
-                for q in range(rows): # for each beam expansion
+            for c in range(cols):  # for each column (word, essentially)
+                for q in range(rows):  # for each beam expansion
                     # compute logprob of expanding beam q with word in (sorted) position c
                     local_logprob = ys[q, c]
                     candidate_logprob = beam_logprobs_sum[q] + local_logprob.cpu()
                     candidates.append(dict(c=ix[q, c], q=q,
                                            p=candidate_logprob,
                                            r=local_logprob))
-            candidates = sorted(candidates,  key=lambda x: -x['p'])
-            
+            candidates = sorted(candidates, key=lambda x: -x['p'])
+
             new_state = [_.clone() for _ in state]
-            #beam_seq_prev, beam_seq_logprobs_prev
+            # beam_seq_prev, beam_seq_logprobs_prev
             if t >= 1:
-            #we''ll need these as reference when we fork beams around
+                # we''ll need these as reference when we fork beams around
                 beam_seq_prev = beam_seq[:t].clone()
                 beam_seq_logprobs_prev = beam_seq_logprobs[:t].clone()
             for vix in range(beam_size):
                 v = candidates[vix]
-                #fork beam index q into index vix
+                # fork beam index q into index vix
                 if t >= 1:
                     beam_seq[:t, vix] = beam_seq_prev[:, v['q']]
                     beam_seq_logprobs[:t, vix] = beam_seq_logprobs_prev[:, v['q']]
-                #rearrange recurrent states
+                # rearrange recurrent states
                 for state_ix in range(len(new_state)):
-                #  copy over state in previous beam q to new beam at vix
-                    new_state[state_ix][:, vix] = state[state_ix][:, v['q']] # dimension one is time step
-                #append new end terminal at the end of this beam
-                beam_seq[t, vix] = v['c'] # c'th word is the continuation
-                beam_seq_logprobs[t, vix] = v['r'] # the raw logprob here
-                beam_logprobs_sum[vix] = v['p'] # the new (sum) logprob along this beam
+                    #  copy over state in previous beam q to new beam at vix
+                    new_state[state_ix][:, vix] = state[state_ix][:, v['q']]  # dimension one is time step
+                # append new end terminal at the end of this beam
+                beam_seq[t, vix] = v['c']  # c'th word is the continuation
+                beam_seq_logprobs[t, vix] = v['r']  # the raw logprob here
+                beam_logprobs_sum[vix] = v['p']  # the new (sum) logprob along this beam
             state = new_state
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates
 
@@ -102,14 +101,14 @@ class CaptionModel(nn.Module):
             for every previous beam we now many new possibilities to branch out
             we need to resort our beams to maintain the loop invariant of keeping
             the top beam_size most likely sequences."""
-            logprobsf = logprobs.data.float() # lets go to CPU for more efficiency in indexing operations
+            logprobsf = logprobs.data.float()  # lets go to CPU for more efficiency in indexing operations
             # suppress UNK tokens in the decoding
-            logprobsf[:,logprobsf.size(1)-1] =  logprobsf[:, logprobsf.size(1)-1] - 1000  
-        
-            beam_seq,\
-            beam_seq_logprobs,\
-            beam_logprobs_sum,\
-            state,\
+            logprobsf[:, logprobsf.size(1) - 1] = logprobsf[:, logprobsf.size(1) - 1] - 1000
+
+            beam_seq, \
+            beam_seq_logprobs, \
+            beam_logprobs_sum, \
+            state, \
             candidates_divm = beam_step(logprobsf,
                                         beam_size,
                                         t,
@@ -123,7 +122,7 @@ class CaptionModel(nn.Module):
                 # if time's up... or if end token is reached then copy beams
                 if beam_seq[t, vix] == 0 or t == self.seq_length - 1:
                     final_beam = {
-                        'seq': beam_seq[:, vix].clone(), 
+                        'seq': beam_seq[:, vix].clone(),
                         'logps': beam_seq_logprobs[:, vix].clone(),
                         'p': float(beam_logprobs_sum[vix].cpu().numpy())
                     }
