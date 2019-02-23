@@ -116,9 +116,8 @@ def eval_split(model, crit, loader, eval_kwargs={}):
             # forward the model to also get generated samples for each image
 
             if beam_size > 1:
-                print("NUM_CLUSTERS: " + str(eval_kwargs['num_clusters']))
+                print(len(list(eval_kwargs.keys())))
                 result = model.sample(fc_feats, att_feats, eval_kwargs)
-                print("HI")
                 if len(result) == 4:
                     seq, _, all_candidate_sentences_pre,  all_candidate_scores_pre = result
                 else:
