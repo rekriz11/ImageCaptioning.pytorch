@@ -144,7 +144,7 @@ class CaptionModel(nn.Module):
                 for k in range(len(be[0])):
                     avg_be.append(sum([be[j][k] for j in range(len(be))])/len(be))
                 beam_embeds.append(avg_be)
-            std_embeds = whited(beam_embeds)
+            std_embeds = whiten(beam_embeds)
 
             ## Cluster beam embeddings
             ## Run K-means to cluster candidates into K clusters
