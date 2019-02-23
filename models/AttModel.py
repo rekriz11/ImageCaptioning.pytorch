@@ -170,6 +170,7 @@ class AttModel(CaptionModel):
         return seq.transpose(0, 1), seqLogprobs.transpose(0, 1), all_candidate_sentences, all_candidate_scores
 
     def sample(self, fc_feats, att_feats, opt={}):
+        print("NMCLSTR: " + str(opt.num_clusters))
         sample_max = opt.get('sample_max', 1)
         beam_size = opt.get('beam_size', 1)
         temperature = opt.get('temperature', 1.0)
