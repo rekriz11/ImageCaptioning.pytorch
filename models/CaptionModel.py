@@ -20,6 +20,17 @@ class CaptionModel(nn.Module):
     def __init__(self):
         super(CaptionModel, self).__init__()
 
+    def add_noise_to_hidden_state(self, state, t, opt):
+        """If the noise opt is set, add noise to the hidden which decays with time."""
+        noise_amount = opt.get('hidden_state_noise', 0.0)
+        if noise_amount > 0.0:
+            sigma = noise_amount / float(t+1)
+            random_noise = torch.cuda.FloatTensor(state[0].size()).normal_(0, sigma) 
+            # random_noise = torch.FloatTensor(state.size()).normal_(0, sigma) # Uncomment if running on cpu 
+        state = [state[0] + random_noise, state[1]]
+        return state
+
+
     def beam_search(self, state, logprobs, *args, **kwargs):
         # args are the miscelleous inputs to the core in addition to embedded word and state
         # kwargs only accept opt
@@ -106,6 +117,7 @@ class CaptionModel(nn.Module):
                                         beam_seq_logprobs,
                                         beam_logprobs_sum,
                                         state)
+            state = self.add_noise_to_hidden_state(state, t, opt)
 
             for vix in range(beam_size):
                 # if time's up... or if end token is reached then copy beams

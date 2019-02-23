@@ -49,6 +49,8 @@ parser.add_argument('--beam_size', type=int, default=8,
                     help='used when sample_max = 1, indicates number of beams in beam search. Usually 2 or 3 works well. More is not better. Set this to 1 for faster runtime but a bit worse performance.')
 parser.add_argument('--temperature', type=float, default=1.0,
                     help='temperature when sampling from distributions (i.e. when sample_max = 0). Lower = "safer" predictions.')
+parser.add_argument('--hidden_state_noise', type=float, default=0.0,
+                help='Use this at decoding to add random noise to language model weights.')
 # For evaluation on a folder of images:
 parser.add_argument('--image_folder', type=str, default='',
                     help='If this is nonempty then will predict on the images in this folder path')
@@ -91,6 +93,8 @@ if opt.batch_size == 0:
     opt.batch_size = infos['opt'].batch_size
 if len(opt.id) == 0:
     opt.id = infos['opt'].id
+assert not(opt.beam_size == 1 and hidden_state_noise > 0.0)
+ 
 ignore = ["id", "batch_size", "beam_size", "start_from", "language_eval"]
 for k in vars(infos['opt']).keys():
     if k not in ignore:

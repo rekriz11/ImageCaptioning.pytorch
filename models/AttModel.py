@@ -140,13 +140,12 @@ class AttModel(CaptionModel):
             tmp_att_feats = att_feats[k:k + 1].expand(*((beam_size,) + att_feats.size()[1:])).contiguous()
             tmp_p_att_feats = p_att_feats[k:k + 1].expand(*((beam_size,) + p_att_feats.size()[1:])).contiguous()
 
-            for t in range(1):
-                if t == 0:  # input <bos>
-                    it = fc_feats.data.new(beam_size).long().zero_()
-                    xt = self.embed(Variable(it, requires_grad=False))
+            it = fc_feats.data.new(beam_size).long().zero_()
+            xt = self.embed(Variable(it, requires_grad=False))
 
-                output, state = self.core(xt, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, state)
-                logprobs = F.log_softmax(self.logit(output))
+            output, state = self.core(xt, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, state)
+
+            logprobs = F.log_softmax(self.logit(output))
 
             self.done_beams[k] = self.beam_search(state, logprobs, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, opt=opt)
 
@@ -159,6 +158,7 @@ class AttModel(CaptionModel):
                 temp_seq = torch.LongTensor(self.seq_length, batch_size).zero_()
                 temp_seq[:, k] = self.done_beams[k][p]['seq']
                 candidate_sentences.append(temp_seq.transpose(0, 1))
+
                 candidate_scores.append(self.done_beams[k][p]['logps'].sum())
 
             all_candidate_sentences.append(candidate_sentences)
@@ -223,6 +223,7 @@ class AttModel(CaptionModel):
                 seqLogprobs.append(sampleLogprobs.view(-1))
 
             output, state = self.core(xt, fc_feats, att_feats, p_att_feats, state)
+
             logprobs = F.log_softmax(self.logit(output))
 
         return torch.cat([_.unsqueeze(1) for _ in seq], 1), torch.cat([_.unsqueeze(1) for _ in seqLogprobs], 1)
