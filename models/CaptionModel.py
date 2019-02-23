@@ -266,7 +266,7 @@ class CaptionModel(nn.Module):
             ## Run special clustered beam step!
             if num_clusters > 1:
                 beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
-                          candidates_divm = cluster_beam_step(logprobsf, beam_size, \
+                          candidates_divm, prev_beams = cluster_beam_step(logprobsf, beam_size, \
                                                               t, beam_seq, beam_seq_logprobs, \
                                                               beam_logprobs_sum, state, \
                                                               num_clusters, embeds, vocab, prev_beams)
