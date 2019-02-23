@@ -58,7 +58,7 @@ class CaptionModel(nn.Module):
             # embeds: glove embeddings for vocab (FOR CLUSTERED BEAM ONLY)
             # vocab: set of vocab (FOR CLUSTERED BEAM ONLY)
             # prev_beams: previous beam in list[str] form (FOR CLUSTERED BEAM ONLY)
-            #OUPUTS:
+            # OUTPUTS:
             # beam_seq : tensor containing the word indices of the decoded captions
             # beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
             # beam_logprobs_sum : joint log-probability of each beam
