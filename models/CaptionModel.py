@@ -225,6 +225,9 @@ class CaptionModel(nn.Module):
             print(beam_seq)
             print(beam_seq_logprobs)
 
+            for i in range(beam_seq[0]):
+                print(vocab[beam_seq[0][i]].item())
+
             a = b
             
             return beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, candidates, cur_beams
