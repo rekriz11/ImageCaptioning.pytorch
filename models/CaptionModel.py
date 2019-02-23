@@ -148,7 +148,7 @@ class CaptionModel(nn.Module):
 
             ## Cluster beam embeddings
             ## Run K-means to cluster candidates into K clusters
-            centroids,_ = kmeans(std_embeds, self.num_clusters)
+            centroids,_ = kmeans(std_embeds, num_clusters)
             cluster_labels = []
             for e in std_embeds:
                 min_distance = 1e10
