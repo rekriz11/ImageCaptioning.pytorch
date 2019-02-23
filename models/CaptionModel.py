@@ -160,7 +160,7 @@ class CaptionModel(nn.Module):
 
             print("\nCLUSTERS")
             for i in range(max(cluster_labels)):
-                cluster = [orig_beams[c] for c in cluster_labels if c == i]
+                cluster = [orig_beams[j] for j in range(len(cluster_labels)) if cluster_labels[j] == i]
                 print(cluster)
 
             ## Get top BEAM_SIZE/NUM_CLUSTERS candidates from each cluster
