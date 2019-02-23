@@ -178,6 +178,7 @@ class CaptionModel(nn.Module):
                 elif min(cluster_counts) == math.ceil(beam_size / num_clusters):
                     break
                 else:
+                    print("HI")
                     continue
             print(new_candidates)
             print()
