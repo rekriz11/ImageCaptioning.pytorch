@@ -181,6 +181,7 @@ class CaptionModel(nn.Module):
                     for i, l in enumerate(cluster_labels):
                         if i not in indices:
                             new_candidates.append(candidates[i])
+                            indices.append(i)
                             break
             
             candidates = new_candidates
