@@ -117,6 +117,10 @@ parser.add_argument('--num_clusters', type=int, default=1,
 parser.add_argument('--cluster_embeddings_file', type=str, default='',
                     help='Embeddings file if using clustered beam search.')
 
+# Option related to k_per_candidate beam search
+parser.add_argument('--k_per_cand', type=int, default=0,
+                    help='Number of candidates allowed per beam hypothesis')
+
 opt = parser.parse_args()
 
 # Load infos

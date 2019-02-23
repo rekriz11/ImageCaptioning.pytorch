@@ -45,25 +45,26 @@ class CaptionModel(nn.Module):
         # args are the miscelleous inputs to the core in addition to embedded word and state
         # kwargs only accept opt
 
-        def beam_step(logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
-                              num_clusters, embeds, vocab, prev_beams):
+        def beam_step(logprobsf, opt, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, prev_beams):
             # INPUTS:
             # logprobsf: probabilities augmented after diversity
-            # beam_size: obvious
+            # opt: all arguments
             # t        : time instant
             # beam_seq : tensor contanining the beams
             # beam_seq_logprobs: tensor contanining the beam logprobs
             # beam_logprobs_sum: tensor contanining joint logprobs
-            # num_cluster: number of clusters
-            # embeds: glove embeddings for vocab (FOR CLUSTERED BEAM ONLY)
-            # vocab: set of vocab (FOR CLUSTERED BEAM ONLY)
             # prev_beams: previous beam in list[str] form (FOR CLUSTERED BEAM ONLY)
             # OUTPUTS:
             # beam_seq : tensor containing the word indices of the decoded captions
             # beam_seq_logprobs : log-probability of each decision made, same size as beam_seq
             # beam_logprobs_sum : joint log-probability of each beam
             # new_beams: new beam in list[str] form (FOR CLUSTERED BEAM ONLY)
-            
+
+            beam_size = opt.get('beam_size', 10)
+            num_clusters = opt.get('num_clusters', 1)
+            embeds = opt.get('embeds', [])
+            vocab = opt.get('vocab', dict())
+            k_per_cand = opt.get('k_per_cand', 0)
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
@@ -85,9 +86,62 @@ class CaptionModel(nn.Module):
             candidates = sorted(candidates,  key=lambda x: -x['p'])
             new_beams = []
 
-            ## If doing Clustered Beam Search
-            if num_clusters > 1:
+            '''
+            ## New beam (for debugging k_per_cand)
+            if t == 0 and k_per_cand != 0:
+                for i in range(beam_size):
+                    new_beams.append([vocab[candidates[i]['c'].item()]])
+                print("\nFIRST BEAM: " + str(new_beams))
+            '''
+
+            if t >= 1 and k_per_cand != 0:
+                '''
                 ## Original beam (for debugging)
+                print("\nORIGINAL BEAM: ")
+                orig_beams = []
+                for i in range(beam_size):
+                    try:
+                        orig_beam = vocab[candidates[i]['c'].item()]
+                        prev_beam = prev_beams[candidates[i]['q']]
+                        orig_beams.append(prev_beam + [orig_beam])
+                        print(prev_beam + [orig_beam])
+                    except KeyError:
+                        orig_beams.append(prev_beams[candidates[i]['q']])
+                        print(prev_beams[candidates[i]['q']])
+                '''
+
+                ## Restricts to K per previous beam candidate
+                new_candidates = []
+                indices = []
+                num_per_cand = [0 for i in range(beam_size)]
+                i = 0
+                while len(new_candidates) < beam_size:
+                    prev_beam_id = candidates[i]['q']
+                    if num_per_cand[prev_beam_id] < k_per_cand:
+                        new_candidates.append(candidates[i])
+                        num_per_cand[prev_beam_id] += 1
+                        indices.append(i)
+                    i += 1
+                candidates = new_candidates
+
+                '''
+                ## New beam (for debugging)
+                print("\nPOST-K_PER_CAND BEAM: ")
+                for i in range(beam_size):
+                    try:
+                        new_beam = vocab[candidates[i]['c'].item()]
+                        prev_beam = prev_beams[candidates[i]['q']]
+                        new_beams.append(prev_beam + [new_beam])
+                        print(prev_beam + [new_beam])
+                    except KeyError:
+                        new_beams.append(prev_beams[candidates[i]['q']])
+                        print(prev_beams[candidates[i]['q']])
+                print(indices)
+                '''
+                
+            ## If doing Clustered Beam Search:
+            elif num_clusters > 1:
+                ## Original beam
                 orig_beams = []
                 for i in range(beam_size*2):
                     try:
@@ -199,12 +253,6 @@ class CaptionModel(nn.Module):
         # start beam search
         opt = kwargs['opt']
         beam_size = opt.get('beam_size', 10)
-        num_clusters = opt.get('num_clusters', 1)
-
-        vocab = opt.get('vocab')
-        embeds = []
-        if num_clusters > 1:
-            embeds = opt.get('embeds')
 
         beam_seq = torch.LongTensor(self.seq_length, beam_size).zero_()
         beam_seq_logprobs = torch.FloatTensor(self.seq_length, beam_size).zero_()
@@ -226,10 +274,9 @@ class CaptionModel(nn.Module):
 
             beam_seq, beam_seq_logprobs, beam_logprobs_sum, state, \
                       candidates_divm, prev_beams = \
-                      beam_step(logprobsf, beam_size, \
+                      beam_step(logprobsf, opt, \
                                 t, beam_seq, beam_seq_logprobs, \
-                                beam_logprobs_sum, state, \
-                                num_clusters, embeds, vocab, prev_beams)
+                                beam_logprobs_sum, state, prev_beams)
             state = self.add_noise_to_hidden_state(state, t, opt)
 
             for vix in range(beam_size):

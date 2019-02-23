@@ -12,7 +12,6 @@ from .Att2inModel import Att2inModel
 from .AttModel import *
 
 def setup(opt):
-    
     if opt.caption_model == 'show_tell':
         model = ShowTellModel(opt)
     elif opt.caption_model == 'show_attend_tell':
