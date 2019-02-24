@@ -65,7 +65,9 @@ class CaptionModel(nn.Module):
             embeds = opt.get('embeds', [])
             vocab = opt.get('vocab', dict())
             k_per_cand = opt.get('k_per_cand', 0)
-            hamming_penalty = opt.get('k_per_cand', 0.0)
+            hamming_penalty = opt.get('hamming_penalty', 0.0)
+
+            print(hamming_penalty)
 
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
