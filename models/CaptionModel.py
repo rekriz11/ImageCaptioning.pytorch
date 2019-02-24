@@ -138,8 +138,8 @@ class CaptionModel(nn.Module):
                 print(indices)
                 '''
             elif t >= 1 and hamming_penalty > 0.0:
+                '''
                 ## Original beam (for debugging)
-                print(candidates[0])
                 print("\nORIGINAL BEAM: ")
                 orig_beams = []
                 for i in range(len(candidates)):
@@ -155,6 +155,7 @@ class CaptionModel(nn.Module):
                         if i < beam_size:
                             print(str(prev_beams[candidates[i]['q']]) + "\t" + \
                                   str(candidates[i]['p'].item()))
+                '''
 
                 ## Penalizes by count of words seen in previous candidates
                 word_counts = dict()
@@ -180,7 +181,8 @@ class CaptionModel(nn.Module):
                 for i in indices:
                     new_candidates.append(candidates[i])
                 candidates = new_candidates
-                        
+
+                '''
                 ## New beam (for debugging)
                 print("\nPOST-HAMMING PENALTY BEAM: ")
                 for i in range(beam_size):
@@ -195,9 +197,7 @@ class CaptionModel(nn.Module):
                         print(str(prev_beams[candidates[i]['q']]) + "\t" + \
                                   str(candidates[i]['p'].item()))
                 print(indices)
-
-                if t >= 3:
-                    a = b
+                '''
                 
             ## If doing Clustered Beam Search:
             elif num_clusters > 1:
