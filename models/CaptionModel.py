@@ -147,10 +147,12 @@ class CaptionModel(nn.Module):
                         orig_beam = vocab[candidates[i]['c'].item()]
                         prev_beam = prev_beams[candidates[i]['q']]
                         orig_beams.append(prev_beam + [orig_beam])
-                        print(prev_beam + [orig_beam])
+                        print(prev_beam + [orig_beam] + "\t" + \
+                              prev_beams[candidates[i]['p']])
                     except KeyError:
                         orig_beams.append(prev_beams[candidates[i]['q']])
-                        print(prev_beams[candidates[i]['q']])
+                        print(prev_beams[candidates[i]['q']] + "\t" + \
+                              prev_beams[candidates[i]['p']])
 
                 ## Penalizes by count of words seen in previous candidates
                 word_counts = dict()
@@ -169,15 +171,17 @@ class CaptionModel(nn.Module):
                             word_counts[word] = 1
                     new_scores.append(candidates[i]['p'] - c*hamming_penalty)
 
+                print(new_scores)
+
                 ## Resorts candidates based on new scores
-                indices = sorted(range(len(new_scores)), key=lambda k: new_scores[k])
+                indices = sorted(range(len(new_scores)), key=lambda k: new_scores[k], reverse=True)
                 new_candidates = []
                 for i in indices:
                     new_candidates.append(candidates[i])
                 candidates = new_candidates
                         
                 ## New beam (for debugging)
-                print("\nPOST-K_PER_CAND BEAM: ")
+                print("\nPOST-HAMMING PENALTY BEAM: ")
                 for i in range(beam_size):
                     try:
                         new_beam = vocab[candidates[i]['c'].item()]
@@ -188,6 +192,9 @@ class CaptionModel(nn.Module):
                         new_beams.append(prev_beams[candidates[i]['q']])
                         print(prev_beams[candidates[i]['q']])
                 print(indices)
+
+                if t >= 3:
+                    a = b
                 
             ## If doing Clustered Beam Search:
             elif num_clusters > 1:
