@@ -175,6 +175,7 @@ class CaptionModel(nn.Module):
 
                 ## Resorts candidates based on new scores
                 indices = sorted(range(len(new_scores)), key=lambda k: new_scores[k], reverse=True)
+                indices = sorted(indices[:beam_size])
                 new_candidates = []
                 for i in indices:
                     new_candidates.append(candidates[i])
@@ -193,7 +194,7 @@ class CaptionModel(nn.Module):
                         new_beams.append(prev_beams[candidates[i]['q']])
                         print(str(prev_beams[candidates[i]['q']]) + "\t" + \
                                   str(candidates[i]['p'].item()))
-                print(indices[:10])
+                print(indices)
 
                 if t >= 3:
                     a = b
