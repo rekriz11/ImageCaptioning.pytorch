@@ -142,7 +142,7 @@ class CaptionModel(nn.Module):
                 print(candidates[0])
                 print("\nORIGINAL BEAM: ")
                 orig_beams = []
-                for i in range(candidates):
+                for i in range(len(candidates)):
                     try:
                         orig_beam = vocab[candidates[i]['c'].item()]
                         prev_beam = prev_beams[candidates[i]['q']]
