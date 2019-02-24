@@ -152,6 +152,7 @@ class CaptionModel(nn.Module):
                         orig_beams.append(prev_beams[candidates[i]['q']])
                         print(prev_beams[candidates[i]['q']])
 
+                ## Penalizes by count of words seen in previous candidates
                 word_counts = dict()
                 new_scores = []
                 for i in range(len(orig_beams)):
@@ -168,14 +169,13 @@ class CaptionModel(nn.Module):
                             word_counts[word] = 1
                     new_scores.append(candidates[i]['s'] - c*hamming_penalty)
 
+                ## Resorts candidates based on new scores
                 indices = sorted(range(len(new_scores)), key=lambda k: new_scores[k])
-
                 new_candidates = []
                 for i in indices:
                     new_candidates.append(candidates[i])
                 candidates = new_candidates
                         
-                
                 ## New beam (for debugging)
                 print("\nPOST-K_PER_CAND BEAM: ")
                 for i in range(beam_size):
