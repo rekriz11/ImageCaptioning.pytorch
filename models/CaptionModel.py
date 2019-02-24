@@ -173,8 +173,6 @@ class CaptionModel(nn.Module):
                             word_counts[word] = 1
                     new_scores.append(candidates[i]['p'] - c*hamming_penalty)
 
-                print(new_scores[:beam_size*2])
-
                 ## Resorts candidates based on new scores
                 indices = sorted(range(len(new_scores)), key=lambda k: new_scores[k], reverse=True)
                 new_candidates = []
@@ -189,10 +187,12 @@ class CaptionModel(nn.Module):
                         new_beam = vocab[candidates[i]['c'].item()]
                         prev_beam = prev_beams[candidates[i]['q']]
                         new_beams.append(prev_beam + [new_beam])
-                        print(prev_beam + [new_beam])
+                        print(str(prev_beam + [new_beam]) + "\t" + \
+                                  str(candidates[i]['p'].item()))
                     except KeyError:
                         new_beams.append(prev_beams[candidates[i]['q']])
-                        print(prev_beams[candidates[i]['q']])
+                        print(str(prev_beams[candidates[i]['q']]) + "\t" + \
+                                  str(candidates[i]['p'].item()))
                 print(indices[:10])
 
                 if t >= 3:
