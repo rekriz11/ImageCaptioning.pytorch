@@ -121,6 +121,10 @@ parser.add_argument('--cluster_embeddings_file', type=str, default='',
 parser.add_argument('--k_per_cand', type=int, default=0,
                     help='Number of candidates allowed per beam hypothesis')
 
+# Option relating to hamming penalty
+parser.add_argument('--hamming_penalty', type=float, default=0.0,
+                    help='Hamming Penalty for overlapping candidates')
+
 opt = parser.parse_args()
 
 # Load infos
