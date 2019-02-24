@@ -147,12 +147,12 @@ class CaptionModel(nn.Module):
                         orig_beam = vocab[candidates[i]['c'].item()]
                         prev_beam = prev_beams[candidates[i]['q']]
                         orig_beams.append(prev_beam + [orig_beam])
-                        if i < beam_size*2:
+                        if i < beam_size:
                             print(str(prev_beam + [orig_beam]) + "\t" + \
                                   str(candidates[i]['p'].item()))
                     except KeyError:
                         orig_beams.append(prev_beams[candidates[i]['q']])
-                        if i < beam_size*2:
+                        if i < beam_size:
                             print(str(prev_beams[candidates[i]['q']]) + "\t" + \
                                   str(candidates[i]['p'].item()))
 
