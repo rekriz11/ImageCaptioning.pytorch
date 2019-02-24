@@ -6,8 +6,10 @@ set -o pipefail
 MODEL_DIRECTORY="/data2/the_beamers/image_captioning/data/top_down/"
 MODEL="${MODEL_DIRECTORY}model-best.pth"
 MODEL_INFOS_PATH="${MODEL_DIRECTORY}infos_td-best.pkl"
-IMAGE_DIRECTORY="/data2/the_beamers/image_captioning/data/val2017"
-NUM_IMAGES=10
+# If this is empty, will use the test set for MSCOCO
+# IMAGE_DIRECTORY="/data2/the_beamers/image_captioning/data/val2017"
+IMAGE_DIRECTORY=
+NUM_IMAGES=100
 OUTPUT_DIRECTORY="experiments/"
 BEAM_SIZE=10
 
@@ -17,6 +19,8 @@ echo "Beam Search, number of candidates=${BEAM_SIZE}, hidden_state_noise=0.3"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
+              --dump_images 0 \
+              --language_eval 1 \
               --num_images $NUM_IMAGES \
               --sample_max 1 \
               --beam_size $BEAM_SIZE \
@@ -27,6 +31,8 @@ echo "Beam Search, number of candidates=${BEAM_SIZE}"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
+              --dump_images 0 \
+              --language_eval 1 \
               --num_images $NUM_IMAGES \
               --sample_max 1 \
               --beam_size $BEAM_SIZE \
@@ -36,6 +42,8 @@ echo "Random sampling, temperature=1.0"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
+              --dump_images 0 \
+              --language_eval 1 \
               --num_images $NUM_IMAGES \
               --sample_max 0 \
               --beam_size 1 \
@@ -47,6 +55,8 @@ echo "Random sampling, temperature=0.7"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
+              --dump_images 0 \
+              --language_eval 1 \
               --num_images $NUM_IMAGES \
               --sample_max 0 \
               --beam_size 1 \
@@ -58,6 +68,8 @@ echo "Random sampling, temperature=0.5"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
+              --dump_images 0 \
+              --language_eval 1 \
               --num_images $NUM_IMAGES \
               --sample_max 0 \
               --beam_size 1 \
@@ -70,6 +82,8 @@ echo "Random sampling, top_c=10, temperature=0.5"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
+              --dump_images 0 \
+              --language_eval 1 \
               --num_images $NUM_IMAGES \
               --sample_max 0 \
               --beam_size 1 \
@@ -82,6 +96,8 @@ echo "K_per_Cand Beam Search, number of candidates=${BEAM_SIZE}"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
+              --dump_images 0 \
+              --language_eval 1 \
               --num_images $NUM_IMAGES \
               --sample_max 1 \
               --beam_size $BEAM_SIZE \
@@ -92,6 +108,8 @@ echo "Hamming Penalty Beam Search, number of candidates=${BEAM_SIZE}"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
+              --dump_images 0 \
+              --language_eval 1 \
               --num_images $NUM_IMAGES \
               --sample_max 1 \
               --beam_size $BEAM_SIZE \
@@ -102,6 +120,8 @@ echo "Clustered Beam Search, number of candidates=${BEAM_SIZE}"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
+              --dump_images 0 \
+              --language_eval 1 \
               --num_images $NUM_IMAGES \
               --sample_max 1 \
               --beam_size $BEAM_SIZE \
