@@ -148,11 +148,11 @@ class CaptionModel(nn.Module):
                         prev_beam = prev_beams[candidates[i]['q']]
                         orig_beams.append(prev_beam + [orig_beam])
                         print(str(prev_beam + [orig_beam]) + "\t" + \
-                              prev_beams[candidates[i]['p']])
+                              str(candidates[i]['p'].item()))
                     except KeyError:
                         orig_beams.append(prev_beams[candidates[i]['q']])
                         print(str(prev_beams[candidates[i]['q']]) + "\t" + \
-                              prev_beams[candidates[i]['p']])
+                              str(candidates[i]['p'].item()))
 
                 ## Penalizes by count of words seen in previous candidates
                 word_counts = dict()
