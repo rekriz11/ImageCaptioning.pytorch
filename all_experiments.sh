@@ -88,6 +88,16 @@ python eval.py --model "$MODEL" \
               --k_per_cand 3 \
               --output_json_file_path "$OUTPUT_DIRECTORY/kpc.json"
 
+echo "Hamming Penalty Beam Search, number of candidates=${BEAM_SIZE}"
+python eval.py --model "$MODEL" \
+              --infos_path "$MODEL_INFOS_PATH" \
+              --image_folder "$IMAGE_DIRECTORY" \
+              --num_images $NUM_IMAGES \
+              --sample_max 1 \
+              --beam_size $BEAM_SIZE \
+              --hamming_penalty 0.8 \
+              --output_json_file_path "$OUTPUT_DIRECTORY/hpbs.json"
+
 echo "Clustered Beam Search, number of candidates=${BEAM_SIZE}"
 python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
