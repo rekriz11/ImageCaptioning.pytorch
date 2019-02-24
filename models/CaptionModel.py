@@ -138,9 +138,8 @@ class CaptionModel(nn.Module):
                 print(indices)
                 '''
             elif t >= 1 and hamming_penalty > 0.0:
-                '''
                 ## Original beam (for debugging)
-                print("\nORIGINAL BEAM: ")
+                #print("\nORIGINAL BEAM: ")
                 orig_beams = []
                 for i in range(len(candidates)):
                     try:
@@ -148,14 +147,17 @@ class CaptionModel(nn.Module):
                         prev_beam = prev_beams[candidates[i]['q']]
                         orig_beams.append(prev_beam + [orig_beam])
                         if i < beam_size:
+                            '''
                             print(str(prev_beam + [orig_beam]) + "\t" + \
                                   str(candidates[i]['p'].item()))
+                            '''
                     except KeyError:
                         orig_beams.append(prev_beams[candidates[i]['q']])
                         if i < beam_size:
+                            '''
                             print(str(prev_beams[candidates[i]['q']]) + "\t" + \
                                   str(candidates[i]['p'].item()))
-                '''
+                            '''
 
                 ## Penalizes by count of words seen in previous candidates
                 word_counts = dict()
@@ -182,22 +184,24 @@ class CaptionModel(nn.Module):
                     new_candidates.append(candidates[i])
                 candidates = new_candidates
 
-                '''
                 ## New beam (for debugging)
-                print("\nPOST-HAMMING PENALTY BEAM: ")
+                #print("\nPOST-HAMMING PENALTY BEAM: ")
                 for i in range(beam_size):
                     try:
                         new_beam = vocab[candidates[i]['c'].item()]
                         prev_beam = prev_beams[candidates[i]['q']]
                         new_beams.append(prev_beam + [new_beam])
+                        '''
                         print(str(prev_beam + [new_beam]) + "\t" + \
                                   str(candidates[i]['p'].item()))
+                        '''
                     except KeyError:
                         new_beams.append(prev_beams[candidates[i]['q']])
+                        '''
                         print(str(prev_beams[candidates[i]['q']]) + "\t" + \
                                   str(candidates[i]['p'].item()))
-                print(indices)
-                '''
+                        '''
+                #print(indices)
                 
             ## If doing Clustered Beam Search:
             elif num_clusters > 1:
