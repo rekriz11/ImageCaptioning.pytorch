@@ -67,8 +67,6 @@ class CaptionModel(nn.Module):
             k_per_cand = opt.get('k_per_cand', 0)
             hamming_penalty = opt.get('hamming_penalty', 0.0)
 
-            print(hamming_penalty)
-
             ys, ix = torch.sort(logprobsf, 1, True)
             candidates = []
             if num_clusters > 1:
@@ -169,7 +167,7 @@ class CaptionModel(nn.Module):
                             word_counts[word] += 1
                         except KeyError:
                             word_counts[word] = 1
-                    new_scores.append(candidates[i]['s'] - c*hamming_penalty)
+                    new_scores.append(candidates[i]['p'] - c*hamming_penalty)
 
                 ## Resorts candidates based on new scores
                 indices = sorted(range(len(new_scores)), key=lambda k: new_scores[k])
