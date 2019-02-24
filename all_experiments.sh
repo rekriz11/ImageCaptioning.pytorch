@@ -18,7 +18,7 @@ python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
               --num_images $NUM_IMAGES \
-              --sample_max 1 \
+              --sample_max 0 \
               --beam_size $BEAM_SIZE \
               --hidden_state_noise 0.3 \
               --output_json_file_path "$OUTPUT_DIRECTORY/bs_npad0.3.json"
@@ -28,7 +28,7 @@ python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
               --num_images $NUM_IMAGES \
-              --sample_max 1 \
+              --sample_max 0 \
               --beam_size $BEAM_SIZE \
               --output_json_file_path "$OUTPUT_DIRECTORY/bs.json"
 
@@ -83,7 +83,7 @@ python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
               --num_images $NUM_IMAGES \
-              --sample_max 1 \
+              --sample_max 0 \
               --beam_size $BEAM_SIZE \
               --k_per_cand 3 \
               --output_json_file_path "$OUTPUT_DIRECTORY/kpc.json"
@@ -93,7 +93,7 @@ python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
               --num_images $NUM_IMAGES \
-              --sample_max 1 \
+              --sample_max 0 \
               --beam_size $BEAM_SIZE \
               --hamming_penalty 0.8 \
               --output_json_file_path "$OUTPUT_DIRECTORY/hpbs.json"
@@ -103,7 +103,7 @@ python eval.py --model "$MODEL" \
               --infos_path "$MODEL_INFOS_PATH" \
               --image_folder "$IMAGE_DIRECTORY" \
               --num_images $NUM_IMAGES \
-              --sample_max 1 \
+              --sample_max 0 \
               --beam_size $BEAM_SIZE \
               --num_clusters 5 \
               --cluster_embeddings_file /data1/embeddings/eng/glove.42B.300d.txt \
