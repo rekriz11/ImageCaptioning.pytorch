@@ -7,7 +7,7 @@ MODEL_DIRECTORY="/data2/the_beamers/image_captioning/data/top_down/"
 MODEL="${MODEL_DIRECTORY}model-best.pth"
 MODEL_INFOS_PATH="${MODEL_DIRECTORY}infos_td-best.pkl"
 IMAGE_DIRECTORY="/data2/the_beamers/image_captioning/data/val2017"
-NUM_IMAGES=10
+NUM_IMAGES=100
 OUTPUT_DIRECTORY="experiments/"
 BEAM_SIZE=10
 
