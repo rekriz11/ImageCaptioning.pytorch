@@ -89,8 +89,11 @@ class CaptionModel(nn.Module):
 
             ## New beam (for debugging k_per_cand)
             if t == 0 and (k_per_cand != 0 or hamming_penalty > 0.0):
-                for i in range(beam_size):
-                    new_beams.append([vocab[candidates[i]['c'].item()]])
+                while len(new_beams) < beam_size:
+                    try:
+                        new_beams.append([vocab[candidates[i]['c'].item()]])
+                    except KeyError:
+                        continue
                 #print("\nFIRST BEAM: " + str(new_beams))
 
             if t >= 1 and k_per_cand != 0:

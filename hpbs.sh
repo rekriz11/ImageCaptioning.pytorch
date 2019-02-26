@@ -9,7 +9,7 @@ MODEL_INFOS_PATH="${MODEL_DIRECTORY}infos_td-best.pkl"
 IMAGE_DIRECTORY="/data2/the_beamers/image_captioning/data/val2017"
 NUM_IMAGES=100
 OUTPUT_DIRECTORY="experiments/"
-BEAM_SIZE=10
+BEAM_SIZE=100
 
 mkdir -p OUTPUT_DIRECTORY
 
