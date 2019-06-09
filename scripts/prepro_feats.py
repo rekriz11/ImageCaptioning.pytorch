@@ -43,9 +43,10 @@ preprocess = trn.Compose([
         #trn.ToTensor(),
         trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
-
-from misc.resnet_utils import myResnet
-import misc.resnet as resnet
+import sys
+sys.path.append(os.path.abspath('./misc/'))
+from resnet_utils import myResnet
+import resnet as resnet
 
 
 def main(params):
@@ -57,7 +58,8 @@ def main(params):
 
   imgs = json.load(open(params['input_json'], 'r'))
   imgs = imgs['images']
-  N = len(imgs)
+  N = len([i for i in imgs if i['filepath'] == 'val2014'])
+  import pdb; pdb.set_trace()
 
   seed(123) # make reproducible
 
@@ -71,31 +73,32 @@ def main(params):
   with h5py.File(os.path.join(dir_fc, 'feats_fc.h5')) as file_fc,\
        h5py.File(os.path.join(dir_att, 'feats_att.h5')) as file_att:
     for i, img in enumerate(imgs):
-      # load the image
-      I = skimage.io.imread(os.path.join(params['images_root'], img['filepath'], img['filename']))
-      # handle grayscale input images
-      if len(I.shape) == 2:
-        I = I[:,:,np.newaxis]
-        I = np.concatenate((I,I,I), axis=2)
+      if img['filepath'] == 'val2014':
+          # load the image
+          I = skimage.io.imread(os.path.join(params['images_root'], img['filepath'], img['filename']))
+          # handle grayscale input images
+          if len(I.shape) == 2:
+            I = I[:,:,np.newaxis]
+            I = np.concatenate((I,I,I), axis=2)
 
-      I = I.astype('float32')/255.0
-      I = torch.from_numpy(I.transpose([2,0,1])).cuda()
-      with torch.no_grad():
-          I = Variable(preprocess(I))
-          tmp_fc, tmp_att = my_resnet(I, params['att_size'])
+          I = I.astype('float32')/255.0
+          I = torch.from_numpy(I.transpose([2,0,1])).cuda()
+          with torch.no_grad():
+              I = Variable(preprocess(I))
+              tmp_fc, tmp_att = my_resnet(I, params['att_size'])
 
-      # write to hdf5
-      d_set_fc = file_fc.create_dataset(
-          str(img['cocoid']), 
-          (2048,), dtype="float")
-      d_set_att = file_att.create_dataset(
-          str(img['cocoid']), 
-          (params['att_size'], params['att_size'], 2048), dtype="float")
+          # write to hdf5
+          d_set_fc = file_fc.create_dataset(
+              str(img['cocoid']), 
+              (2048,), dtype="float")
+          d_set_att = file_att.create_dataset(
+              str(img['cocoid']), 
+              (params['att_size'], params['att_size'], 2048), dtype="float")
 
-      d_set_fc[...] = tmp_fc.cpu().float().numpy()
-      d_set_att[...] = tmp_att.cpu().float().numpy()
-      if i % 1000 == 0:
-        print('processing %d/%d (%.2f%% done)' % (i, N, i*100.0 / N))
+          d_set_fc[...] = tmp_fc.cpu().float().numpy()
+          d_set_att[...] = tmp_att.cpu().float().numpy()
+          if i % 1000 == 0:
+            print('processing %d/%d (%.2f%% done)' % (i, N, i*100.0 / N))
     file_fc.close()
     file_att.close()
 
