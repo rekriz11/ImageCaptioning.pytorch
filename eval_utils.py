@@ -19,7 +19,7 @@ import misc.utils as utils
 import json
 
 
-def language_eval(dataset, preds, model_id, split):
+def language_eval(dataset, preds, output_path, split):
     import sys
     if 'coco' in dataset:
         sys.path.append("coco-caption")
@@ -27,6 +27,8 @@ def language_eval(dataset, preds, model_id, split):
     else:
         sys.path.append("f30k-caption")
         annFile = 'f30k-caption/annotations/dataset_flickr30k.json'
+
+    sys.path.append('/data2/the_beamers/coco-caption')
     from pycocotools.coco import COCO
     from pycocoevalcap.eval import COCOEvalCap
 
@@ -34,7 +36,7 @@ def language_eval(dataset, preds, model_id, split):
 
     if not os.path.isdir('eval_results'):
         os.mkdir('eval_results')
-    cache_path = os.path.join('eval_results/', model_id + '_' + split + '.json')
+    cache_path = os.path.join(output_path + '_eval_' + split + '.json')
 
     coco = COCO(annFile)
     valids = coco.getImgIds()
@@ -52,12 +54,13 @@ def language_eval(dataset, preds, model_id, split):
     # create output dictionary
     out = {}
     for metric, score in cocoEval.eval.items():
-        out[metric] = score
+        out[metric] = str(score)
 
     imgToEval = cocoEval.imgToEval
     for p in preds_filt:
         image_id, caption = p['image_id'], p['caption']
         imgToEval[image_id]['caption'] = caption
+    
     with open(cache_path, 'w') as outfile:
         json.dump({'overall': out, 'imgToEval': imgToEval}, outfile)
 
@@ -126,7 +129,6 @@ def eval_split(model, crit, loader, eval_kwargs={}):
                     seq, score = model.sample(fc_feats, att_feats, eval_kwargs)
                     seqs.append(seq)
                     scores.append(score)
-
         if beam_size > 1:
             seq = seq.cpu().numpy()
             sents = utils.decode_sequence(loader.get_vocab(), seq)
@@ -234,11 +236,11 @@ def eval_split(model, crit, loader, eval_kwargs={}):
 
     lang_stats = None
     if lang_eval == 1:
-        lang_stats = language_eval(dataset, predictions, eval_kwargs['id'], split)
+        lang_stats = language_eval(dataset, predictions, output_json_file_path, split)
 
     # Switch back to training mode
     model.train()
-    with open(output_json_file_path, 'w') as fout:
+    with open(output_json_file_path + '.json', 'w') as fout:
         print('Wrote to {}'.format(output_json_file_path))
         json.dump(output_data, fout)
     return loss_sum / loss_evals, predictions, lang_stats

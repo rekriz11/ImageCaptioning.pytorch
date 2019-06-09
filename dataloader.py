@@ -129,10 +129,17 @@ class DataLoader(data.Dataset):
         infos = []
         gts = []
 
+        error_count = 0
         for i in range(batch_size):
             # fetch image
+            # try:
             tmp_fc, tmp_att,\
                 ix, tmp_wrapped = self._prefetch_process[split].get()
+            # except Exception as e:
+                # print(e)
+                # print('ERROR READING BATCH')
+                # error_count += 1
+                # continue
             fc_batch += [tmp_fc] * seq_per_img
             att_batch += [tmp_att] * seq_per_img
 
@@ -171,6 +178,8 @@ class DataLoader(data.Dataset):
             info_dict['id'] = self.info['images'][ix]['id']
             info_dict['file_path'] = self.info['images'][ix]['file_path']
             infos.append(info_dict)
+       
+        print('total num errors: %d ' % error_count)
 
         # generate mask
         nonzeros = np.array(list(map(lambda x: (x != 0).sum() + 2, label_batch)))

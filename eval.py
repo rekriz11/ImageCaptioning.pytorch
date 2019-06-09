@@ -127,6 +127,10 @@ parser.add_argument('--hamming_penalty', type=float, default=0.0,
 
 opt = parser.parse_args()
 
+if os.path.exists(opt.output_json_file_path + '.json'):
+    print('%s already exists. Skipping.' % opt.output_json_file_path)
+    exit(0)
+
 # Load infos
 with open(opt.infos_path, 'rb') as f:
     infos = cPickle.load(f)
